@@ -1,0 +1,3 @@
+#elvir 2nd
+api_id2 = 29986266
+api_hash2 = 3691961865c8cb2563797593c33ca27a
