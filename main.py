@@ -9,34 +9,39 @@ import config
 # # The first parameter is the .session file name (absolute paths allowed)
 # with TelegramClient('anon', api_id, api_hash) as client:
 #     client.loop.run_until_complete(client.send_message('me', 'Hello!'))
-client = TelegramClient("lol", config.api_id2, config.api_hash2)
-SEARCHED_DIRS = ["Новые FA", "Free assist"]
+client = TelegramClient('lol', config.api_id2, config.api_hash2)
+
+SEARCHED_DIRS = ['Новые FA', 'Free assist']
 
 
 async def main():
     async for dialog in client.iter_dialogs():
-        if dialog.name == "Golubin | Assistant":
+        if dialog.name == 'Golubin | Assistant':
             print(dialog.id)
+            await send_to_channels(SEARCHED_DIRS)
 
+
+async def send_to_channels(dirs=[]):
     request = await client(functions.messages.GetDialogFiltersRequest())
+
     for dialog_filter in request:
         result = dialog_filter.to_dict()
         try:
-            if result["title"] in SEARCHED_DIRS:
-                print(result["title"])
-                for channel in result["pinned_peers"]:
+            if result['title'] in dirs:
+                print(result['title'])
+                for channel in result['pinned_peers']:
                     try:
-                        print(channel["channel_id"])
+                        print(channel['channel_id'])
                     except KeyError:
                         pass
 
-                for channel in result["include_peers"]:
+                for channel in result['include_peers']:
                     try:
-                        print(channel["channel_id"])
+                        print(channel['channel_id'])
                     except KeyError:
                         pass
         except KeyError:
-            print(dialog_filter.to_dict())
+            pass
     # print(json.dumps(result))
 
 
