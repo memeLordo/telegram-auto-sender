@@ -1,6 +1,7 @@
 import asyncio
 
 from telethon import TelegramClient, events
+from telethon.types import User
 
 import config
 
@@ -45,6 +46,20 @@ async def handle_new_message(event):
         # await event.reply(f'hi, {sender}!')
 
 
-if __name__ == '__main__':
-    my_client.start()
-    my_client.run_until_disconnected()
+# if __name__ == '__main__':
+#     my_client.start()
+#     my_client.run_until_disconnected()
+async def main():
+
+    # request = await clients[0](functions.messages.GetDialogFiltersRequest())
+    # dialogs = client.iter_dialogs()
+    async for dialog in client.iter_dialogs():
+        # print(dialog.entity)
+        if not isinstance(dialog.entity, User):
+            continue
+        if str(dialog.message.message).lower() == 'работа':
+            print(dialog.name)
+
+
+with clients[0] as client:
+    client.loop.run_until_complete(main())
