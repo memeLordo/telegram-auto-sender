@@ -1,1 +1,2 @@
-telethon==1.32.1
+loguru==0.7.2
+telethon==1.33.0

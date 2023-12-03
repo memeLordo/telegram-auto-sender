@@ -1,6 +1,7 @@
 # import json
 import asyncio
 
+from loguru import logger
 from telethon import errors, functions
 from telethon.sync import TelegramClient
 from telethon.tl import types
@@ -14,30 +15,41 @@ clients = [
     TelegramClient('session3', config.api_id2, config.api_hash2),
 ]
 
+logger.add(
+    "process_main.log",
+    format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
+    level="INFO",
+    rotation="10 MB",
+    retention="2 days",
+    compression="zip"
+)
+
 SEARCHED_DIRS = ['Новые FA', 'Free assist']
 count = 0
 
 
-async def main():
+@logger.catch
+async def start():
     request = await client(functions.messages.GetDialogFiltersRequest())
 
     await send_to_channels(request)
 
-    print(count)
+    logger.debug(f'Current count: {count}')
     if client != clients[-1]:
-        print('start waiting')
+        logger.success('Start waiting')
         await asyncio.sleep(10 * 60)
 
     # async for dialog in client.iter_dialogs():
-    #     print(dialog.id)
-    #     print(client.get_entity(GetFullChannel(dialog.id)))
+    #     logger.info(dialog.id)
+    #     logger.info(client.get_entity(GetFullChannel(dialog.id)))
     # if dialog.id in ad_channels_1:
-    #     print('success')
+    #     logger.info('success')
     # if dialog.name == 'Golubin | Assistant':
-    #     print(dialog.id)
+    #     logger.info(dialog.id)
     # await send_to_channels(SEARCHED_DIRS)
 
 
+# @logger.catch
 async def send_to_channels(request, dirs=SEARCHED_DIRS):
     for dialog_filter in request:
         result = dialog_filter.to_dict()
@@ -45,7 +57,7 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
             title = result['title']
 
             if title in dirs:
-                print(result['title'])
+                logger.info('Current dir: ' + result['title'])
                 # await send_message_to_channel(result, ad_kazan)
                 await asyncio.sleep(3)
 
@@ -58,12 +70,13 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
                         await send_message_to_channel(result, ad_2)
                         await asyncio.sleep(3)
 
-                print('Succsess')
+                logger.success('Sent!')
 
         except KeyError:
             pass
 
 
+@logger.catch
 async def send_message_to_channel(result, message):
     for channel in result['pinned_peers'] + result['include_peers']:
         try:
@@ -71,38 +84,38 @@ async def send_message_to_channel(result, message):
             channel_id = int(channel['channel_id'])
             my_channel = await client.get_entity(types.PeerChannel(channel_id))
 
-            async with client.action(my_channel, 'typing'):
-                await client.send_message(my_channel, message=message)
+            # async with client.action(my_channel, 'typing'):
+            #     await client.send_message(my_channel, message=message)
             await asyncio.sleep(1)
             global count
             count += 1
-            # ch = client.get_entity(channel_id)
-            # print(f'sent to {my_channel.title}')
+            logger.debug(my_channel.title)
 
         except KeyError:
             continue
-        except errors.rpcbaseerrors.ForbiddenError:
-            print('Forbidden: ', my_channel.title)
-            # print(e)
-        except errors.rpcerrorlist.UserBannedInChannelError as e:
-            print('Ban: ', my_channel.title)
-            # client.delete_dialog(channel_id)
-            print(repr(e))
-            print('channel deleted')
-        except errors.rpcerrorlist.ChannelPrivateError as e:
-            print('Private: ', my_channel.title)
-            print(e)
         except errors.rpcerrorlist.SlowModeWaitError:
             continue
-        except Exception as e:
-            print('Error: ', my_channel.title)
-            print(repr(e))
+        except errors.rpcbaseerrors.ForbiddenError:
+            logger.warning(f'Forbidden: {my_channel.title}')
+            # logger.info(e)
+        except errors.rpcerrorlist.UserBannedInChannelError:
+            logger.warning(f'Ban: {my_channel.title}')
+            # client.delete_dialog(channel_id)
+            # logger.info(repr(e))
+            # logger.info('channel deleted')
+        except errors.rpcerrorlist.ChannelPrivateError:
+            logger.error(f'Private: {my_channel.title}')
+            # logger.info(repr(e))
 
+        # except Exception as e:
+        #     logger.info('Error: ', my_channel.title)
+        #     logger.info(repr(e))
 
-# time.sleep(10 * 60)
+    # loop = asyncio.get_event_loop()
+
+    # time.sleep(10 * 60)
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
     for current_client in clients:
         with current_client as client:
             client.session.save_entities = False
-            client.loop.run_until_complete(main())
+            client.loop.run_until_complete(start())
