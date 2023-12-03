@@ -185,7 +185,7 @@ async def check_new_messages():
         except AttributeError:
             continue
             # print(dialog.name)
-    logger.info(show_client(client))
+    logger.debug(show_client(client))
 
 
 ####################################################
@@ -206,6 +206,7 @@ def start_event_handler():
 
 if __name__ == '__main__':
 
+    logger.info('Begin check')
     for current_client in clients:
         with current_client as client:
             client.session.save_entities = False
