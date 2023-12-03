@@ -72,8 +72,17 @@ async def sent_reply_start(client, bebra):
     first_name = bebra.first_name.split(' ')[0]
 
     logger.info(f'{show_client(client)}: got message from {log_name}')
+    await asyncio.sleep(1)
 
-    await client.send_read_acknowledge(PeerUser(bebra.id))
+    #############
+    try:
+        await client.send_read_acknowledge(PeerUser(bebra.id))
+    except ValueError:
+        logger.error(bebra.first_name + ' is muted')
+        logger.info('Running through the messages')
+        client.loop.run_until_complete(check_new_messages())
+    #############
+
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(4)
         await client.send_message(bebra, say_hi(first_name))
@@ -90,10 +99,19 @@ async def sent_reply(client, bebra, message):
 
     log_name = bebra.first_name
     logger.info(f'{show_client(client)}: got message from {log_name}')
+    await asyncio.sleep(1)
 
-    await client.send_read_acknowledge(PeerUser(bebra.id))
+    #############
+    try:
+        await client.send_read_acknowledge(PeerUser(bebra.id))
+    except ValueError:
+        logger.error(bebra.first_name + ' is muted')
+        logger.info('Running through the messages')
+        client.loop.run_until_complete(check_new_messages())
+    #############
+
     async with client.action(bebra, 'typing'):
-        await asyncio.sleep(5)
+        await asyncio.sleep(4)
         await client.send_message(bebra, message)
         logger.debug(
             f'{show_client(client)}: message sent to {log_name}')
@@ -111,18 +129,16 @@ async def match_sent_message(client, user, message):
             sent_reply(client, user, reply_finish)
         )
         return
-
-    match message:
-        case 'работа' | 'ассистент':
-            await client.loop.create_task(
-                sent_reply_start(client, user)
-            )
-            return
-        case '+':
-            await client.loop.create_task(
-                sent_reply(client, user, reply_to_form)
-            )
-            return
+    elif any(key == message for key in ['работа', 'ассистент']):
+        await client.loop.create_task(
+            sent_reply_start(client, user)
+        )
+        return
+    elif '+' == message:
+        await client.loop.create_task(
+            sent_reply(client, user, reply_to_form)
+        )
+        return
 
 
 ####################################################
@@ -130,53 +146,30 @@ async def match_sent_message(client, user, message):
 @logger.catch
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
-    try:
-        bebra = await event.get_sender()
-        await asyncio.sleep(1)
-        await match_sent_message(client1,
-                                 bebra,
-                                 event.raw_text.lower())
-    except ValueError:
-        logger.error(bebra.first_name + ' is muted')
-        logger.info('Running through the messages')
-        client1.loop.run_until_complete(check_new_messages())
-    # except Exception as e:
-    #     logger.critical(repr(e))
+    bebra = await event.get_sender()
+    await asyncio.sleep(1)
+    await match_sent_message(client1,
+                             bebra,
+                             event.raw_text.lower())
 
 
 @logger.catch
 @client2.on(events.NewMessage)
 async def handle_new_message2(event):
-    try:
-        bebra = await event.get_sender()
-        await asyncio.sleep(1)
-        await match_sent_message(client2,
-                                 bebra,
-                                 event.raw_text.lower())
-    except ValueError:
-        logger.error(bebra.first_name + ' is muted')
-        logger.info('Running through the messages')
-        client2.loop.run_until_complete(check_new_messages())
-    # except Exception as e:
-    #     logger.critical(repr(e))
+    bebra = await event.get_sender()
+    await match_sent_message(client2,
+                             bebra,
+                             event.raw_text.lower())
 
 
 @logger.catch
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
-    try:
-        # print(client3)
-        bebra = await event.get_sender()
-        await asyncio.sleep(1)
-        await match_sent_message(client3,
-                                 bebra,
-                                 event.raw_text.lower())
-    except ValueError:
-        logger.error(bebra.first_name + ' is muted')
-        logger.info('Running through the messages')
-        client3.loop.run_until_complete(check_new_messages())
-    # except Exception as e:
-    #     logger.critical(repr(e))
+    bebra = await event.get_sender()
+    await asyncio.sleep(1)
+    await match_sent_message(client3,
+                             bebra,
+                             event.raw_text.lower())
 
 
 ####################################################
@@ -187,9 +180,7 @@ async def check_new_messages():
 
     await client.start()
     dialogs = client.iter_dialogs()
-    # except Exception as e:
-    #     print(repr(e))
-    #
+
     async for dialog in dialogs:
         try:
             bebra = dialog.entity
@@ -201,8 +192,6 @@ async def check_new_messages():
         except AttributeError:
             continue
             # print(dialog.name)
-        # except Exception as e:
-        #     print(repr(e))
     logger.info(show_client(client))
 
 
@@ -211,15 +200,12 @@ async def check_new_messages():
 
 @logger.catch
 def start_event_handler():
-    # try:
     logger.info('Begin loop')
     loop = asyncio.get_event_loop()
     client1.start()
     client2.start()
     client3.start()
     loop.run_forever()
-    # except Exception as e:
-    #     print(repr(e))
 
 
 ####################################################
@@ -228,10 +214,8 @@ def start_event_handler():
 if __name__ == '__main__':
 
     for current_client in clients:
-
         with current_client as client:
             client.session.save_entities = False
             client.loop.run_until_complete(check_new_messages())
-
     logger.success('')
     start_event_handler()
