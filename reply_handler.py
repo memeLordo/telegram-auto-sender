@@ -45,6 +45,16 @@ clients = [client1, client2, client3]
 ####################################################
 
 
+def add_count(client):
+    if client == client1:
+        pass
+    if client == client2:
+        pass
+    if client == client3:
+        pass
+####################################################
+
+
 async def sent_reply_start(client, bebra):
 
     first_name = bebra.first_name.split(' ')[0]
@@ -73,6 +83,8 @@ async def sent_reply_to_form(client, bebra):
 
 
 async def match_sent_message(client, user, message):
+    if not isinstance(user, User):
+        return
     match message:
         case 'работа' | 'ассистент':
             await client.loop.create_task(
@@ -90,7 +102,7 @@ async def match_sent_message(client, user, message):
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
     try:
-        bebra = await event.get_sender()
+        bebra = await event.get_input_sender()
         await match_sent_message(client1,
                                  bebra,
                                  event.raw_text.lower())
@@ -101,7 +113,8 @@ async def handle_new_message1(event):
 @client2.on(events.NewMessage)
 async def handle_new_message2(event):
     try:
-        bebra = await event.get_sender()
+        bebra = await event.get_input_sender()
+        print('lol ' + bebra.first_name)
         await match_sent_message(client2,
                                  bebra,
                                  event.raw_text.lower())
@@ -112,7 +125,8 @@ async def handle_new_message2(event):
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
     try:
-        bebra = await event.get_sender()
+        # print(repr(client3.get_me()))
+        bebra = await event.get_input_sender()
         await match_sent_message(client3,
                                  bebra,
                                  event.raw_text.lower())
@@ -134,8 +148,8 @@ async def check_new_messages():
 
     async for dialog in dialogs:
         try:
-            if not isinstance(dialog.entity, User):
-                continue
+            # if not isinstance(dialog.entity, User):
+            #     continue
             bebra = dialog.entity
             await match_sent_message(client,
                                      bebra,
