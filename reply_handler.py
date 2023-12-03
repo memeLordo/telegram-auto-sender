@@ -45,6 +45,15 @@ clients = [client1, client2, client3]
 ####################################################
 
 
+def show_client(client):
+    if client == client1:
+        return 'client1'
+    elif client == client2:
+        return 'client2'
+    else:
+        return 'client3'
+
+
 def add_count(client):
     if client == client1:
         pass
@@ -58,17 +67,16 @@ def add_count(client):
 async def sent_reply_start(client, bebra):
 
     first_name = bebra.first_name.split(' ')[0]
-    print(first_name)
     await client.send_read_acknowledge(bebra.id)
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(4)
-        await client.send_message(bebra, say_hi(bebra.first_name))
-        print(f'Новое сообщение от: {bebra.first_name}')
+        await client.send_message(bebra, say_hi(first_name))
+        print(f'{show_client(client)}: Новое сообщение от: {first_name}')
 
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
         await client.send_message(bebra, reply_massage)
-        print('reply message sent')
+        print(f'{show_client(client)}: reply message sent')
 
 
 async def sent_reply_to_form(client, bebra):
@@ -76,7 +84,7 @@ async def sent_reply_to_form(client, bebra):
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
         await client.send_message(bebra, reply_to_form)
-        print('form message sent')
+        print(f'{show_client(client)}: form message sent')
 
 
 ####################################################
@@ -102,10 +110,12 @@ async def match_sent_message(client, user, message):
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
     try:
-        bebra = await event.get_input_sender()
+        bebra = await event.get_sender()
         await match_sent_message(client1,
                                  bebra,
                                  event.raw_text.lower())
+    except ValueError:
+        print(bebra.first_name + ' is muted')
     except Exception as e:
         print(repr(e))
 
@@ -113,11 +123,12 @@ async def handle_new_message1(event):
 @client2.on(events.NewMessage)
 async def handle_new_message2(event):
     try:
-        bebra = await event.get_input_sender()
-        print('lol ' + bebra.first_name)
+        bebra = await event.get_sender()
         await match_sent_message(client2,
                                  bebra,
                                  event.raw_text.lower())
+    except ValueError:
+        print(bebra.first_name + ' is muted')
     except Exception as e:
         print(repr(e))
 
@@ -125,12 +136,13 @@ async def handle_new_message2(event):
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
     try:
-        # print(repr(client3.get_me()))
-        bebra = await event.get_input_sender()
+        # print(client3)
+        bebra = await event.get_sender()
         await match_sent_message(client3,
                                  bebra,
                                  event.raw_text.lower())
-
+    except ValueError:
+        print(bebra.first_name + ' is muted')
     except Exception as e:
         print(repr(e))
 
@@ -148,13 +160,12 @@ async def check_new_messages():
 
     async for dialog in dialogs:
         try:
-            # if not isinstance(dialog.entity, User):
-            #     continue
             bebra = dialog.entity
             await match_sent_message(client,
                                      bebra,
                                      str(dialog.message.message).lower())
-
+        except ValueError:
+            print(bebra.first_name + ' is muted')
             # print(dialog.name)
         except Exception as e:
             print(repr(e))
