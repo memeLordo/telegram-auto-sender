@@ -84,8 +84,8 @@ async def send_message_to_channel(result, message):
             channel_id = int(channel['channel_id'])
             my_channel = await client.get_entity(types.PeerChannel(channel_id))
 
-            # async with client.action(my_channel, 'typing'):
-            #     await client.send_message(my_channel, message=message)
+            async with client.action(my_channel, 'typing'):
+                await client.send_message(my_channel, message=message)
             await asyncio.sleep(1)
             global count
             count += 1
