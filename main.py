@@ -8,11 +8,6 @@ from telethon.tl import types
 import config
 from messages_config import ad_1, ad_2
 
-# import time
-
-
-# Use your own values from my.telegram.org
-
 clients = [
     TelegramClient('session1', config.api_id, config.api_hash),
     TelegramClient('session2', config.api_id2, config.api_hash2),
@@ -27,9 +22,11 @@ async def main():
     request = await client(functions.messages.GetDialogFiltersRequest())
 
     await send_to_channels(request)
-    print('start waiting')
+
     print(count)
-    await asyncio.sleep(10 * 60)
+    if client != clients[-1]:
+        print('start waiting')
+        await asyncio.sleep(10 * 60)
 
     # async for dialog in client.iter_dialogs():
     #     print(dialog.id)
@@ -73,30 +70,21 @@ async def send_message_to_channel(result, message):
 
             channel_id = int(channel['channel_id'])
             my_channel = await client.get_entity(types.PeerChannel(channel_id))
-            # if channel_id in Skip_List:
-            #     raise Exception(f'id {channel_id} skipeed')
 
-            # access_hash = int(channel['access_hash'])
-
-            # get_channel = types.InputPeerChannel(
-            #     channel_id=channel_id, access_hash=access_hash
-            # )
             async with client.action(my_channel, 'typing'):
                 await client.send_message(my_channel, message=message)
             await asyncio.sleep(1)
             global count
             count += 1
             # ch = client.get_entity(channel_id)
-            print(f'sent to {my_channel.title}')
+            # print(f'sent to {my_channel.title}')
 
         except KeyError:
             continue
         except errors.rpcbaseerrors.ForbiddenError:
-            print('Forbidden ', my_channel.title)
+            print('Forbidden: ', my_channel.title)
             # print(e)
         except errors.rpcerrorlist.UserBannedInChannelError as e:
-            # ch = client.get_entity(channel_id)
-            # print(f'removed from {ch.title}')
             print('Ban: ', my_channel.title)
             # client.delete_dialog(channel_id)
             print(repr(e))
@@ -107,18 +95,14 @@ async def send_message_to_channel(result, message):
         except errors.rpcerrorlist.SlowModeWaitError:
             continue
         except Exception as e:
-            print(repr(e))
             print('Error: ', my_channel.title)
-        # finally:
-        #     try:
-        #
-        #         print(my_channel.title)
-        #     except Exception:
-        #         pass
+            print(repr(e))
 
 
 # time.sleep(10 * 60)
-for current_client in clients:
-    with current_client as client:
-        client.session.save_entities = False
-        client.loop.run_until_complete(main())
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    for current_client in clients:
+        with current_client as client:
+            client.session.save_entities = False
+            client.loop.run_until_complete(main())
