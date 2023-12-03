@@ -5,7 +5,7 @@ from telethon import TelegramClient, events
 from telethon.types import PeerUser, User
 
 import config
-from messages_config import reply_finish, reply_massage, reply_to_form
+from messages_config import reply_finish, reply_massage
 
 # logger.remove()
 logger.add(
@@ -124,7 +124,7 @@ async def match_sent_message(client, user, message):
     if not isinstance(user, User) or user.bot:
         return
     # logger.debug(user.username)
-    if 'заполнил' in message:
+    if 'заполнил' in message or '+' == message:
         await client.loop.create_task(
             sent_reply(client, user, reply_finish)
         )
@@ -132,11 +132,6 @@ async def match_sent_message(client, user, message):
     elif any(key == message for key in ['работа', 'ассистент']):
         await client.loop.create_task(
             sent_reply_start(client, user)
-        )
-        return
-    elif '+' == message:
-        await client.loop.create_task(
-            sent_reply(client, user, reply_to_form)
         )
         return
 
@@ -147,7 +142,6 @@ async def match_sent_message(client, user, message):
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
     bebra = await event.get_sender()
-    await asyncio.sleep(1)
     await match_sent_message(client1,
                              bebra,
                              event.raw_text.lower())
@@ -166,7 +160,6 @@ async def handle_new_message2(event):
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
     bebra = await event.get_sender()
-    await asyncio.sleep(1)
     await match_sent_message(client3,
                              bebra,
                              event.raw_text.lower())
