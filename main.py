@@ -3,9 +3,13 @@ import asyncio
 
 from telethon import errors, functions
 from telethon.sync import TelegramClient
-from telethon.tl.types import InputPeerChannel
+from telethon.tl import types
 
 import config
+from messages_config import ad_1, ad_2
+
+# import time
+
 
 # Use your own values from my.telegram.org
 
@@ -16,65 +20,16 @@ clients = [
 ]
 
 SEARCHED_DIRS = ['Новые FA', 'Free assist']
-ad_1 = str(
-    '#Вакансия #ищуассистента\n'
-    '\n'
-    '🔍 Ищу ассистента: удаленно\n'
-    'Это отличная возможность получить ценный опыт в сфере поставок товаров,\n'
-    'развития новых бизнес - направлений в компании с 7 - им стажем💥'
-    '\n'
-    'Задачи, которые тебя ждут:\n'
-    '    - Ведение документооборота\n'
-    '    - Поиск информации в интернете\n'
-    '    - Работа в excel таблицах\n'
-    '    - Личные поручения\n'
-    '\n'
-    'Условия:\n'
-    '-  График работы: 4 часа в день\n'
-    '-  Выходные сб и вс\n'
-    '-  Полностью удаленная работа\n'
-    '-  Недельная стажировка\n'
-    '-  ЗП 20000 р\n'
-    '-  Есть возможность карьерного роста до менеджера по проектам\n'
-    '\n'
-    'Если ты имеешь:\n'
-    '✔️ Опыт работы с офисными приложениями(Word, Excel).\n'
-    '✔️ Ответственно подходишь к работе\n'
-    '✔️ Быстро обучаешься новому\n'
-    '\n'
-    '👉 То  пиши "РАБОТА" @behetly',
-)
-ad_2 = str(
-    '🔍 Ищу ассистента: удаленно\n'
-    'Это отличная возможность получить ценный опыт в сфере поставок товаров\n'
-    'развития новых бизнес - направлений в компании с 7 - им стажем💥\n'
-    '\n'
-    ' Задачи, которые тебя ждут:\n'
-    ' - Ведение документооборота\n'
-    ' - Поиск информации в интернете\n'
-    '-  Работа в excel таблицах\n'
-    ' - Личные поручения\n'
-    '\n'
-    'Условия:\n'
-    '-  График работы: 4 часа в день\n'
-    '-  Выходные сб и вс\n'
-    '-  Полностью удаленная работа\n'
-    '-  Недельная стажировка\n'
-    '-  ЗП 20000 р\n'
-    '-  Есть возможность карьерного роста до менеджера по проектам\n'
-    '\n'
-    'Если ты имеешь:\n'
-    '✔️ Опыт работы с офисными приложениями (Word, Excel).\n'
-    '✔️ Ответственно подходишь к работе\n'
-    '✔️ Быстро обучаешься новому\n'
-    '\n'
-    '👉 То  пиши "РАБОТА" ЛС'
-)
+count = 0
 
 
 async def main():
     request = await client(functions.messages.GetDialogFiltersRequest())
+
     await send_to_channels(request)
+    print('start waiting')
+    print(count)
+    await asyncio.sleep(10 * 60)
 
     # async for dialog in client.iter_dialogs():
     #     print(dialog.id)
@@ -94,43 +49,22 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
 
             if title in dirs:
                 print(result['title'])
+                # await send_message_to_channel(result, ad_kazan)
+                await asyncio.sleep(3)
 
                 match title:
                     case 'Free assist':
                         await send_message_to_channel(result, ad_1)
                         await asyncio.sleep(3)
-                        print('Succsess')
 
                     case 'Новые FA':
                         await send_message_to_channel(result, ad_2)
                         await asyncio.sleep(3)
-                        print('Отправлено 2.')
+
+                print('Succsess')
 
         except KeyError:
             pass
-
-
-#
-#     for dialog_filter in request:
-#         result = dialog_filter.to_dict()
-#         try:
-#             title = result['title']
-#
-#             if title in dirs:
-#                 print(result['title'])
-#
-#                 match title:
-#                     case 'Free assist':
-#                         await send_message_to_channel(result, ad_1)
-#                         print('Отправлено 1.')
-#
-#                     case 'Новые FA':
-#                         await send_message_to_channel(result, ad_2)
-#                         print('Отправлено 2.')
-#
-#         except KeyError:
-#             pass
-# print(json.dumps(result))
 
 
 async def send_message_to_channel(result, message):
@@ -138,48 +72,53 @@ async def send_message_to_channel(result, message):
         try:
 
             channel_id = int(channel['channel_id'])
+            my_channel = await client.get_entity(types.PeerChannel(channel_id))
             # if channel_id in Skip_List:
             #     raise Exception(f'id {channel_id} skipeed')
 
-            access_hash = int(channel['access_hash'])
+            # access_hash = int(channel['access_hash'])
 
-            get_channel = InputPeerChannel(
-                channel_id=channel_id, access_hash=access_hash
-            )
-            async with client.action(channel_id=channel_id, 'typing'):
-                await client.send_message(get_channel, message=message)
+            # get_channel = types.InputPeerChannel(
+            #     channel_id=channel_id, access_hash=access_hash
+            # )
+            async with client.action(my_channel, 'typing'):
+                await client.send_message(my_channel, message=message)
             await asyncio.sleep(1)
-            print(f'sent to {get_channel}')
+            global count
+            count += 1
+            # ch = client.get_entity(channel_id)
+            print(f'sent to {my_channel.title}')
 
         except KeyError:
-            pass
-        except errors.rpcbaseerrors.ForbiddenError as e:
-            print(e)
+            continue
+        except errors.rpcbaseerrors.ForbiddenError:
+            print('Forbidden ', my_channel.title)
+            # print(e)
         except errors.rpcerrorlist.UserBannedInChannelError as e:
-            print(e)
+            # ch = client.get_entity(channel_id)
+            # print(f'removed from {ch.title}')
+            print('Ban: ', my_channel.title)
+            # client.delete_dialog(channel_id)
+            print(repr(e))
+            print('channel deleted')
         except errors.rpcerrorlist.ChannelPrivateError as e:
+            print('Private: ', my_channel.title)
             print(e)
         except errors.rpcerrorlist.SlowModeWaitError:
             continue
         except Exception as e:
-            print(e)
-
-    # for channel in :
-    #     try: w
-    #         asyncio.sleep(1)
-    #         channel_id = int(channel['channel_id'])
-    #         # await client.send_message(channel_id, message=message)
-    #         print(f'sent to {channel_id}')
-    #     except KeyError:
-    #         pass
-    #     except errors.rpcbaseerrors.ForbiddenError as e:
-    #         print(e)
-    #     except errors.rpcerrorlist.UserBannedInChannelError as e:
-    #         print(e)
+            print(repr(e))
+            print('Error: ', my_channel.title)
+        # finally:
+        #     try:
+        #
+        #         print(my_channel.title)
+        #     except Exception:
+        #         pass
 
 
+# time.sleep(10 * 60)
 for current_client in clients:
     with current_client as client:
         client.session.save_entities = False
         client.loop.run_until_complete(main())
-        await asyncio.sleep(10 * 60)
