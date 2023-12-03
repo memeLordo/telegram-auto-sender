@@ -1,9 +1,23 @@
 import asyncio
 
+from loguru import logger
 from telethon import TelegramClient, events
 from telethon.types import User
 
 import config
+from messages_config import reply_massage, reply_to_form
+
+# logger.remove()
+logger.add(
+    "process.log",
+    format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
+    level="INFO",
+    rotation="10 MB",
+    retention="2 days",
+    compression="zip"
+)
+
+####################################################
 
 
 def say_hi(name):
@@ -19,21 +33,7 @@ def say_hi(name):
     return message
 
 
-reply_massage = (
-    'Кстати, вы можете пока заполнить форму,'
-    ' которая пойдёт непосредственно директору для ознакомления.'
-    'Вот ссылка на неё:\n'
-    'https://docs.google.com/forms/d/e/'
-    '1FAIpQLScQ4MXsn-Qrl38tRwgB6O5LPXrGt2Wasv8H5hCvA-N5H4w2Hw/viewform\n'
-    'После этого отпишитесь, например "+", и мы продолжим диалог.'
-)
-
-reply_to_form = (
-    'Отлично. Теперь ваша заявка рассмотрена и отправлена на утверждение '
-    'директору. Если вы нам подойдёте, то я свяжусь с вами. '
-    'И если у вас остались вопросы, то смело задавайте их!'
-)
-
+####################################################
 
 client1 = TelegramClient('session1', config.api_id, config.api_hash)
 client2 = TelegramClient('session2', config.api_id2, config.api_hash2)
@@ -61,30 +61,38 @@ def add_count(client):
         pass
     if client == client3:
         pass
+
+
 ####################################################
 
 
 async def sent_reply_start(client, bebra):
+
+    logger.info(f'{show_client(client)}: got message from {bebra.first_name}')
 
     first_name = bebra.first_name.split(' ')[0]
     await client.send_read_acknowledge(bebra.id)
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(4)
         await client.send_message(bebra, say_hi(first_name))
-        print(f'{show_client(client)}: Новое сообщение от: {first_name}')
 
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
         await client.send_message(bebra, reply_massage)
-        print(f'{show_client(client)}: reply message sent')
+        logger.info(
+            f'{show_client(client)}: message sent to {bebra.first_name}')
 
 
 async def sent_reply_to_form(client, bebra):
+
+    logger.info(f'{show_client(client)}: got message from {bebra.first_name}')
+
     await client.send_read_acknowledge(bebra.id)
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
         await client.send_message(bebra, reply_to_form)
-        print(f'{show_client(client)}: form message sent')
+        logger.info(
+            f'{show_client(client)}: message sent to {bebra.first_name}')
 
 
 ####################################################
@@ -106,7 +114,7 @@ async def match_sent_message(client, user, message):
 
 ####################################################
 
-
+@logger.catch
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
     try:
@@ -116,12 +124,14 @@ async def handle_new_message1(event):
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
-        print(bebra.first_name + ' is muted')
+        logger.error(bebra.first_name + ' is muted')
+        logger.info('Running through the messages')
         client1.loop.run_until_complete(check_new_messages())
-    except Exception as e:
-        print(repr(e))
+    # except Exception as e:
+    #     logger.critical(repr(e))
 
 
+@logger.catch
 @client2.on(events.NewMessage)
 async def handle_new_message2(event):
     try:
@@ -131,12 +141,14 @@ async def handle_new_message2(event):
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
-        print(bebra.first_name + ' is muted')
+        logger.error(bebra.first_name + ' is muted')
+        logger.info('Running through the messages')
         client2.loop.run_until_complete(check_new_messages())
-    except Exception as e:
-        print(repr(e))
+    # except Exception as e:
+    #     logger.critical(repr(e))
 
 
+@logger.catch
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
     try:
@@ -147,23 +159,24 @@ async def handle_new_message3(event):
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
-        print(bebra.first_name + ' is muted')
+        logger.error(bebra.first_name + ' is muted')
+        logger.info('Running through the messages')
         client3.loop.run_until_complete(check_new_messages())
-    except Exception as e:
-        print(repr(e))
+    # except Exception as e:
+    #     logger.critical(repr(e))
 
 
 ####################################################
 
 
+@logger.catch
 async def check_new_messages():
 
-    try:
-        await client.start()
-        dialogs = client.iter_dialogs()
-    except Exception as e:
-        print(repr(e))
-
+    await client.start()
+    dialogs = client.iter_dialogs()
+    # except Exception as e:
+    #     print(repr(e))
+    #
     async for dialog in dialogs:
         try:
             bebra = dialog.entity
@@ -171,25 +184,27 @@ async def check_new_messages():
                                      bebra,
                                      str(dialog.message.message).lower())
         except ValueError as e:
-            print(e.__class__.__name__)
+            logger.critical(e.__class__.__name__)
             # print(dialog.name)
-        except Exception as e:
-            print(repr(e))
-    print(show_client(client) + ' checked')
+        # except Exception as e:
+        #     print(repr(e))
+    logger.info(show_client(client))
 
 
 ####################################################
 
 
+@logger.catch
 def start_event_handler():
-    try:
-        loop = asyncio.get_event_loop()
-        client1.start()
-        client2.start()
-        client3.start()
-        loop.run_forever()
-    except Exception as e:
-        print(repr(e))
+    # try:
+    logger.info('Begin loop')
+    loop = asyncio.get_event_loop()
+    client1.start()
+    client2.start()
+    client3.start()
+    loop.run_forever()
+    # except Exception as e:
+    #     print(repr(e))
 
 
 ####################################################
@@ -203,5 +218,5 @@ if __name__ == '__main__':
             client.session.save_entities = False
             client.loop.run_until_complete(check_new_messages())
 
-    print('done')
+    logger.success('')
     start_event_handler()

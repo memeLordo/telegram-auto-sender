@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-telethon = "==1.32.1"
+telethon = "==1.33.0"
+loguru = "==0.7.2"
 
 [dev-packages]
 
