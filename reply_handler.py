@@ -2,10 +2,10 @@ import asyncio
 
 from loguru import logger
 from telethon import TelegramClient, events
-from telethon.types import User
+from telethon.types import PeerUser, User
 
 import config
-from messages_config import reply_massage, reply_to_form
+from messages_config import reply_finish, reply_massage, reply_to_form
 
 # logger.remove()
 logger.add(
@@ -65,13 +65,15 @@ def add_count(client):
 
 ####################################################
 
-
+@logger.catch
 async def sent_reply_start(client, bebra):
 
-    logger.info(f'{show_client(client)}: got message from {bebra.first_name}')
-
+    log_name = bebra.first_name
     first_name = bebra.first_name.split(' ')[0]
-    await client.send_read_acknowledge(bebra.id)
+
+    logger.info(f'{show_client(client)}: got message from {log_name}')
+
+    await client.send_read_acknowledge(PeerUser(bebra.id))
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(4)
         await client.send_message(bebra, say_hi(first_name))
@@ -79,37 +81,48 @@ async def sent_reply_start(client, bebra):
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
         await client.send_message(bebra, reply_massage)
-        logger.info(
-            f'{show_client(client)}: message sent to {bebra.first_name}')
+        logger.debug(
+            f'{show_client(client)}: message sent to {log_name}')
 
 
-async def sent_reply_to_form(client, bebra):
+@logger.catch
+async def sent_reply(client, bebra, message):
 
-    logger.info(f'{show_client(client)}: got message from {bebra.first_name}')
+    log_name = bebra.first_name
+    logger.info(f'{show_client(client)}: got message from {log_name}')
 
-    await client.send_read_acknowledge(bebra.id)
+    await client.send_read_acknowledge(PeerUser(bebra.id))
     async with client.action(bebra, 'typing'):
         await asyncio.sleep(5)
-        await client.send_message(bebra, reply_to_form)
-        logger.info(
-            f'{show_client(client)}: message sent to {bebra.first_name}')
+        await client.send_message(bebra, message)
+        logger.debug(
+            f'{show_client(client)}: message sent to {log_name}')
 
 
 ####################################################
 
 
 async def match_sent_message(client, user, message):
-    if not isinstance(user, User):
+    if not isinstance(user, User) or user.bot:
         return
+    # logger.debug(user.username)
+    if 'заполнил' in message:
+        await client.loop.create_task(
+            sent_reply(client, user, reply_finish)
+        )
+        return
+
     match message:
         case 'работа' | 'ассистент':
             await client.loop.create_task(
                 sent_reply_start(client, user)
             )
+            return
         case '+':
             await client.loop.create_task(
-                sent_reply_to_form(client, user)
+                sent_reply(client, user, reply_to_form)
             )
+            return
 
 
 ####################################################
@@ -185,6 +198,8 @@ async def check_new_messages():
                                      str(dialog.message.message).lower())
         except ValueError as e:
             logger.critical(e.__class__.__name__)
+        except AttributeError:
+            continue
             # print(dialog.name)
         # except Exception as e:
         #     print(repr(e))
