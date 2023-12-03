@@ -111,11 +111,13 @@ async def match_sent_message(client, user, message):
 async def handle_new_message1(event):
     try:
         bebra = await event.get_sender()
+        await asyncio.sleep(1)
         await match_sent_message(client1,
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
         print(bebra.first_name + ' is muted')
+        client1.loop.run_until_complete(check_new_messages())
     except Exception as e:
         print(repr(e))
 
@@ -124,11 +126,13 @@ async def handle_new_message1(event):
 async def handle_new_message2(event):
     try:
         bebra = await event.get_sender()
+        await asyncio.sleep(1)
         await match_sent_message(client2,
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
         print(bebra.first_name + ' is muted')
+        client2.loop.run_until_complete(check_new_messages())
     except Exception as e:
         print(repr(e))
 
@@ -138,11 +142,13 @@ async def handle_new_message3(event):
     try:
         # print(client3)
         bebra = await event.get_sender()
+        await asyncio.sleep(1)
         await match_sent_message(client3,
                                  bebra,
                                  event.raw_text.lower())
     except ValueError:
         print(bebra.first_name + ' is muted')
+        client3.loop.run_until_complete(check_new_messages())
     except Exception as e:
         print(repr(e))
 
@@ -164,11 +170,12 @@ async def check_new_messages():
             await match_sent_message(client,
                                      bebra,
                                      str(dialog.message.message).lower())
-        except ValueError:
-            print(bebra.first_name + ' is muted')
+        except ValueError as e:
+            print(e.__class__.__name__)
             # print(dialog.name)
         except Exception as e:
             print(repr(e))
+    print(show_client(client) + ' checked')
 
 
 ####################################################
