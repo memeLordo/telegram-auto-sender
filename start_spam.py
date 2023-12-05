@@ -35,8 +35,8 @@ async def start():
 
     await send_to_channels(request)
 
-    logger.debug(f'Current count: {count}')
     if client != clients[-1]:
+        logger.debug(f'Current count: {count}')
         logger.success('Start waiting')
         await asyncio.sleep(10 * 60)
 
