@@ -35,9 +35,9 @@ def say_hi(name):
 
 ####################################################
 
-client1 = TelegramClient('session1', config.api_id, config.api_hash)
-client2 = TelegramClient('session2', config.api_id2, config.api_hash2)
-client3 = TelegramClient('session3', config.api_id2, config.api_hash2)
+client1 = TelegramClient('r_session1', config.api_id, config.api_hash)
+client2 = TelegramClient('r_session2', config.api_id2, config.api_hash2)
+client3 = TelegramClient('r_session3', config.api_id2, config.api_hash2)
 my_client = TelegramClient('anon', config.my_api_id, config.my_api_hash)
 
 clients = [client1, client2, client3]
