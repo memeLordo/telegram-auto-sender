@@ -1,5 +1,6 @@
 # import json
 import asyncio
+import sys
 
 from loguru import logger
 from telethon import errors, functions
@@ -7,7 +8,7 @@ from telethon.sync import TelegramClient
 from telethon.tl import types
 
 import config
-from messages_config import ad_1, ad_2
+from messages_config import ad_1, ad_2, ad_kazan
 
 clients = [
     TelegramClient('session1', config.api_id, config.api_hash),
@@ -24,7 +25,7 @@ logger.add(
     compression="zip"
 )
 
-SEARCHED_DIRS = ['Новые FA', 'Free assist']
+SEARCHED_DIRS = ['Новые FA', 'Free assist', 'КазаньSMS']
 count = 0
 
 
@@ -58,8 +59,8 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
 
             if title in dirs:
                 logger.info('Current dir: ' + result['title'])
-                # await send_message_to_channel(result, ad_kazan)
-                await asyncio.sleep(3)
+                #
+                await asyncio.sleep(1)
 
                 match title:
                     case 'Free assist':
@@ -68,6 +69,10 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
 
                     case 'Новые FA':
                         await send_message_to_channel(result, ad_2)
+                        await asyncio.sleep(3)
+
+                    case 'КазаньSMS':
+                        await send_message_to_channel(result, ad_kazan)
                         await asyncio.sleep(3)
 
                 logger.success('Sent!')
@@ -113,9 +118,18 @@ async def send_message_to_channel(result, message):
 
     # loop = asyncio.get_event_loop()
 
-    # time.sleep(10 * 60)
+
+def choose_clients(client_list):
+    key_clients = sys.argv[1:3+1]
+    if not key_clients:
+        return client_list
+    return list(client_list[int(x)-1] for x in key_clients)
+
+
 if __name__ == '__main__':
+    clients = choose_clients(clients)
     for current_client in clients:
         with current_client as client:
             client.session.save_entities = False
             client.loop.run_until_complete(start())
+    logger.success(f'Total count: {count}')
