@@ -238,11 +238,13 @@ def start_event_handler():
 
 
 if __name__ == '__main__':
-
-    logger.info('Begin check')
-    for current_client in clients:
-        with current_client as client:
-            client.session.save_entities = False
-            client.loop.run_until_complete(check_new_messages())
-    logger.success('')
-    start_event_handler()
+    try:
+        logger.info('Begin check')
+        for current_client in clients:
+            with current_client as client:
+                client.session.save_entities = False
+                client.loop.run_until_complete(check_new_messages())
+        logger.success('')
+        start_event_handler()
+    except Exception as e:
+        logger.error(repr(e))
