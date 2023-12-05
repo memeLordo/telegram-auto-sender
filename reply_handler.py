@@ -90,10 +90,10 @@ async def sent_reply_start(client, bebra, error_exit=False):
                 f'{show_client(client)}: message sent to {log_name}')
 
     except ValueError:
-        logger.error(log_name + ' is unknown')
+        logger.error(f'{show_client(client)}: {log_name} is unknown')
 
         if error_exit:
-            raise ValueError('Still unresolved')
+            raise ValueError(f'{show_client(client)}: Still unresolved')
 
         dialogs = client.iter_dialogs()
         async for dialog in dialogs:
@@ -133,10 +133,10 @@ async def sent_reply(client, bebra, message, error_exit=False):
             logger.debug(
                 f'{show_client(client)}: message sent to {log_name}')
     except ValueError:
-        logger.error(log_name + ' is unknown')
+        logger.error(f'{show_client(client)}: {log_name} is unknown')
 
         if error_exit:
-            raise ValueError('Still unresolved')
+            raise ValueError(f'{show_client(client)}: Still unresolved')
 
         dialogs = client.iter_dialogs()
         async for dialog in dialogs:
