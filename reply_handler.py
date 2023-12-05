@@ -66,36 +66,58 @@ def add_count(client):
 ####################################################
 
 @logger.catch
-async def sent_reply_start(client, bebra):
+async def sent_reply_start(client, bebra, error_exit=False):
 
     log_name = bebra.first_name
     first_name = bebra.first_name.split(' ')[0]
+    if not error_exit:
+        logger.info(f'{show_client(client)}: got message from {log_name}')
 
-    logger.info(f'{show_client(client)}: got message from {log_name}')
     await asyncio.sleep(1)
 
     #############
     try:
+
         await client.send_read_acknowledge(PeerUser(bebra.id))
+        async with client.action(bebra, 'typing'):
+            await asyncio.sleep(4)
+            await client.send_message(bebra, say_hi(first_name))
+
+        async with client.action(bebra, 'typing'):
+            await asyncio.sleep(5)
+            await client.send_message(bebra, reply_massage)
+            logger.debug(
+                f'{show_client(client)}: message sent to {log_name}')
+
     except ValueError:
-        logger.error(bebra.first_name + ' is muted')
-        logger.info('Running through the messages')
-        client.loop.run_until_complete(check_new_messages())
+        logger.error(log_name + ' is unknown')
+
+        if error_exit:
+            raise ValueError('Still unresolved')
+
+        dialogs = client.iter_dialogs()
+        async for dialog in dialogs:
+            try:
+                if (dialog.entity.id == bebra.id):
+                    logger.info(f'{log_name}\'s ID found')
+                    bebra = dialog.entity
+                    # logger.debug(bebra)
+                    await sent_reply_start(client, bebra, True)
+                    break
+            except Exception as e:
+                logger.critical(repr(e))
+
+    # except errors.rpcerrorlist.RpcCallFailError:
+    #     logger.error('Telegram is Down. Reloading...')
+    #     client.disconnect()
+    #     await client.start()
+    #     async with client:
+    #         await client.loop.run_until_complete(check_new_messages())
     #############
-
-    async with client.action(bebra, 'typing'):
-        await asyncio.sleep(4)
-        await client.send_message(bebra, say_hi(first_name))
-
-    async with client.action(bebra, 'typing'):
-        await asyncio.sleep(5)
-        await client.send_message(bebra, reply_massage)
-        logger.debug(
-            f'{show_client(client)}: message sent to {log_name}')
 
 
 @logger.catch
-async def sent_reply(client, bebra, message):
+async def sent_reply(client, bebra, message, error_exit=False):
 
     log_name = bebra.first_name
     logger.info(f'{show_client(client)}: got message from {log_name}')
@@ -104,17 +126,30 @@ async def sent_reply(client, bebra, message):
     #############
     try:
         await client.send_read_acknowledge(PeerUser(bebra.id))
-    except ValueError:
-        logger.error(bebra.first_name + ' is muted')
-        logger.info('Running through the messages')
-        client.loop.run_until_complete(check_new_messages())
-    #############
 
-    async with client.action(bebra, 'typing'):
-        await asyncio.sleep(4)
-        await client.send_message(bebra, message)
-        logger.debug(
-            f'{show_client(client)}: message sent to {log_name}')
+        async with client.action(bebra, 'typing'):
+            await asyncio.sleep(4)
+            await client.send_message(bebra, message)
+            logger.debug(
+                f'{show_client(client)}: message sent to {log_name}')
+    except ValueError:
+        logger.error(log_name + ' is unknown')
+
+        if error_exit:
+            raise ValueError('Still unresolved')
+
+        dialogs = client.iter_dialogs()
+        async for dialog in dialogs:
+            try:
+                if (dialog.entity.id == bebra.id):
+                    logger.info(f'{log_name}\'s ID found')
+                    bebra = dialog.entity
+                    # logger.debug(bebra)
+                    await sent_reply(client, bebra, message, True)
+                    break
+            except Exception as e:
+                logger.critical(repr(e))
+    #############
 
 
 ####################################################
@@ -182,8 +217,6 @@ async def check_new_messages():
                                      str(dialog.message.message).lower())
         except ValueError as e:
             logger.critical(e.__class__.__name__)
-        except AttributeError:
-            continue
             # print(dialog.name)
     logger.debug(show_client(client))
 
