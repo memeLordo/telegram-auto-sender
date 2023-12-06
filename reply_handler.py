@@ -70,6 +70,7 @@ async def sent_reply_start(client, bebra, error_exit=False):
 
     log_name = bebra.first_name
     first_name = bebra.first_name.split(' ')[0]
+    sender = bebra.username
     if not error_exit:
         logger.info(f'{show_client(client)}: got message from {log_name}')
 
@@ -78,14 +79,14 @@ async def sent_reply_start(client, bebra, error_exit=False):
     #############
     try:
 
-        await client.send_read_acknowledge(PeerUser(bebra.id))
+        await client.send_read_acknowledge(sender)
         async with client.action(bebra, 'typing'):
             await asyncio.sleep(4)
             await client.send_message(bebra, say_hi(first_name))
 
         async with client.action(bebra, 'typing'):
             await asyncio.sleep(5)
-            await client.send_message(bebra, reply_massage)
+            await client.send_message(sender, reply_massage)
             logger.debug(
                 f'{show_client(client)}: message sent to {log_name}')
 
@@ -120,16 +121,17 @@ async def sent_reply_start(client, bebra, error_exit=False):
 async def sent_reply(client, bebra, message, error_exit=False):
 
     log_name = bebra.first_name
+    sender = bebra.username
     logger.info(f'{show_client(client)}: got message from {log_name}')
     await asyncio.sleep(1)
 
     #############
     try:
-        await client.send_read_acknowledge(PeerUser(bebra.id))
+        await client.send_read_acknowledge(sender)
 
-        async with client.action(bebra, 'typing'):
+        async with client.action(bebra.username, 'typing'):
             await asyncio.sleep(4)
-            await client.send_message(bebra, message)
+            await client.send_message(sender, message)
             logger.debug(
                 f'{show_client(client)}: message sent to {log_name}')
     except ValueError:
