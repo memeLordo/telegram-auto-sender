@@ -1,3 +1,4 @@
 *.session*
 *.log
 *.txt
+exclude_data.json
