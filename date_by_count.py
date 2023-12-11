@@ -42,12 +42,10 @@ async def exclude_users():
 
 
 async def bebra_wrapper(user, data):
-    client_messages = await client.get_messages(
-        entity=user,
-        reverse=True,
-        limit=1,
-        from_user=user
-    )
+    client_messages = await client.get_messages(entity=user,
+                                                reverse=True,
+                                                limit=1,
+                                                from_user=user)
     if client_messages and client_messages.total < 30:
         data.append(client_messages)
         logger.trace(client_messages.total)
@@ -57,14 +55,15 @@ async def count_users():
     users = await exclude_users()
     messages_data = []
     for bebra in users:
-        await client.loop.create_task(bebra_wrapper(bebra, messages_data))
+        await client.loop.create_task(
+            bebra_wrapper(bebra.entity, messages_data))
 
     for date in todate:
         input_date = datetime.strptime(date, '%d.%m.%y').date()
         count[date] += len(
-            list(filter(lambda x: x[0].date.date()
-                 == input_date, messages_data))
-        )
+            list(
+                filter(lambda x: x[0].date.date() == input_date,
+                       messages_data)))
 
 
 def choose_date():
@@ -85,6 +84,5 @@ if __name__ == '__main__':
         with current_client as client:
             client.session.save_entities = False
             client.loop.run_until_complete(start())
-
     for key, value in count.items():
-        print(f'{key} {value}')
+        print(f'{key}\t{value}')
