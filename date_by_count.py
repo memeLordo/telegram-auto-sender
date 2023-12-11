@@ -2,15 +2,13 @@ import sys
 from datetime import datetime
 
 from loguru import logger
-from telethon import functions, types
+from telethon import types
 from telethon.sync import TelegramClient
 
 import config
 
-# from messages_config import ad_1, ad_2, ad_kazan
-# from telethon.tl import types
 logger.remove()
-logger.add(sys.stderr, level="SUCCESS")
+logger.add(sys.stderr, level="DEBUG")
 
 client1 = TelegramClient('count1', config.api_id, config.api_hash)
 client2 = TelegramClient('count2', config.api_id2, config.api_hash2)
@@ -29,88 +27,43 @@ def show_client(client):
 
 @logger.catch
 async def start():
-    request = await client(functions.messages.GetDialogFiltersRequest())
-    await count_date(request)
+    logger.warning(f'Counting in {show_client(client)}')
+
+    await count_users()
     if client != clients[-1]:
         logger.debug(f'Current count: {count}')
-    print()
 
 
-async def count_date(request):
-    logger.warning(f'Counting in {show_client(client)}')
-    _data = []
-    for dialog_filter in request:
-        result = dialog_filter.to_dict()
-        for key, value in result.items():
-
-            if key == 'title':
-                if value == 'Входящие':
-                    _data += result['exclude_peers']
-                else:
-                    _data += result['include_peers']
-
-                _data = _data + result['pinned_peers']
-
-    await count_users_in_dir(_data)
-
-    logger.success(count)
+async def exclude_users():
+    dialogs = await client.get_dialogs(archived=False)
+    users = list(filter(lambda x: isinstance(x.entity, types.User), dialogs))
+    logger.info(f'Exclude users succses! {len(users)}')
+    return users
 
 
-async def exclude_users(data):
-    arr = []
-    for exclude_user in data:
-        if exclude_user['_'] != 'InputPeerUser':
-            continue
-        user_id = int(exclude_user['user_id'])
-        access_hash = int(exclude_user['access_hash'])
-
-        _peer_user = types.InputPeerUser(
-            user_id=user_id,
-            access_hash=access_hash)
-
-        _user = await client.get_entity(_peer_user)
-        logger.debug(f'{_user.first_name} {_user.last_name}')
-        arr.append(_user)
-        # logger.success(arr)
-    logger.info('Filling excluding data done!')
-    return arr
+async def bebra_wrapper(user, data):
+    client_messages = await client.get_messages(entity=user,
+                                                reverse=True,
+                                                limit=1,
+                                                from_user=user)
+    if client_messages and client_messages.total < 30:
+        data.append(client_messages)
+        logger.trace(client_messages.total)
 
 
-async def count_users_in_dir(_data):
+async def count_users():
+    users = await exclude_users()
+    messages_data = []
+    for bebra in users:
+        await client.loop.create_task(
+            bebra_wrapper(bebra.entity, messages_data))
 
-    exclude_user_list = await exclude_users(_data)
-    logger.debug(len(exclude_user_list))
-    dialogs = await client.get_dialogs()
-    data = [x.entity for x in dialogs if x.entity not in exclude_user_list]
-
-    for bebra in data:
-
-        if not isinstance(bebra, types.User) or bebra.bot:
-            continue
-
-        client_messages = await client.get_messages(
-            entity=bebra,
-            reverse=True,
-            limit=1,
-            from_user=bebra
-        )
-
-        for message in client_messages:
-            logger.debug(f'{bebra.first_name} {bebra.last_name}')
-            for date in todate:
-                # logger.success(date, todate)
-                input_date = datetime.strptime(date, '%d.%m.%y').date()
-                message_date = message.date.date()
-                # logger.debug(f'{input_date} - {message_date}')
-                if input_date == message_date:
-
-                    global count
-
-                    logger.debug(f'{input_date} - {message_date}')
-                    # date = date.strftime('%d.%m.%y')
-
-                    count[date] = count[date]+1
-                    logger.debug(count)
+    for date in todate:
+        input_date = datetime.strptime(date, '%d.%m.%y').date()
+        count[date] += len(
+            list(
+                filter(lambda x: x[0].date.date() == input_date,
+                       messages_data)))
 
 
 def choose_date():
@@ -126,10 +79,10 @@ if __name__ == '__main__':
     todate = choose_date()
     count = dict.fromkeys(todate, 0)
     logger.trace(count)
+
     for current_client in clients:
         with current_client as client:
             client.session.save_entities = False
             client.loop.run_until_complete(start())
-
     for key, value in count.items():
-        print(f'{key} {value}')
+        print(f'{key}\t{value}')
