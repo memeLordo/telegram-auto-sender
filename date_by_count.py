@@ -46,9 +46,10 @@ async def bebra_wrapper(user, data):
                                                 reverse=True,
                                                 limit=1,
                                                 from_user=user)
-    if client_messages and client_messages.total < 30:
-        data.append(client_messages)
-        logger.trace(client_messages.total)
+    if not (client_messages and client_messages.total < 30):
+        return
+    data.append(client_messages)
+    logger.trace(client_messages.total)
 
 
 async def count_users():
