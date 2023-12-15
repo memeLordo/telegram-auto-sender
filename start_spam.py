@@ -2,12 +2,13 @@
 import asyncio
 import sys
 
+import config
+
 from loguru import logger
 from telethon import errors, functions
 from telethon.sync import TelegramClient
 from telethon.tl import types
 
-import config
 from messages_config import ad_3_FreeAssist, ad_3_NewFA
 
 clients = [
