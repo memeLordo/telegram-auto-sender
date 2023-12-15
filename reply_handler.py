@@ -1,11 +1,14 @@
 import asyncio
+import string
+import sys
+from enum import auto, Enum
 
 import config
-
 from loguru import logger
 from messages_config import Reply
 from telethon import events, TelegramClient
-from telethon.types import User
+
+# from telethon.types import User
 
 # logger.remove()
 logger.add(
@@ -16,7 +19,7 @@ logger.add(
     retention="2 days",
     compression="zip",
 )
-
+logger.add(sys.stderr, level="TRACE")
 ####################################################
 
 ####################################################
@@ -137,35 +140,33 @@ async def sent_reply(client, bebra, message, error_exit=False):
 
 
 ####################################################
+keywords = ["гладиолус"]
 
 
-async def match_sent_message(client, user, message):
-    if not isinstance(user, User) or user.bot:
-        return
-    # logger.debug(user.username)
-    if "заполнил" in message or "+" == message:
-        await client.loop.create_task(sent_reply(client, user, Reply.FINISH))
-        return
-    elif any(key == message for key in ["работа", "ассистент"]):
-        await client.loop.create_task(sent_reply_start(client, user))
-        return
+def remove_punct(s):
+    return s.translate(str.maketrans("", "", string.punctuation))
+
+
+def define_type_by_message(message):
+    form_message = remove_punct(message).lower()
+    logger.trace(form_message)
+    if any(key in form_message for key in keywords):
+        return UserType.ASSISTANT
+
+
+# async def match_sent_message(client, user, message):
+#     if not isinstance(user, User) or user.bot:
+#         return
+#     # logger.debug(user.username)
+#     if "заполнил" in message or "+" == message:
+#         await client.loop.create_task(sent_reply(client, user, Reply.FINISH))
+#         return
+#     elif any(key == message for key in ["работа", "ассистент"]):
+#         await client.loop.create_task(sent_reply_start(client, user))
+#         return
 
 
 ####################################################
-
-
-@logger.catch
-@client1.on(events.NewMessage)
-async def handle_new_message1(event):
-    bebra = await event.get_sender()
-    await match_sent_message(client1, bebra, event.raw_text.lower())
-
-
-@logger.catch
-@client2.on(events.NewMessage)
-async def handle_new_message2(event):
-    bebra = await event.get_sender()
-    await match_sent_message(client2, bebra, event.raw_text.lower())
 class UserStatus(Enum):
     INIT_ = auto()
     WAIT_FORM = auto()
@@ -252,16 +253,17 @@ async def handler(event):
 async def check_new_messages():
     await client.start()
     dialogs = client.iter_dialogs()
+    print(dialogs)
 
-    async for dialog in dialogs:
-        try:
-            bebra = dialog.entity
-            message = str(dialog.message.message).lower()
-            await match_sent_message(client, bebra, message)
-        except ValueError as e:
-            logger.critical(e.__class__.__name__)
-            # print(dialog.name)
-    logger.debug(show_client(client))
+    # async for dialog in dialogs:
+    #     try:
+    #         bebra = dialog.entity
+    #         message = str(dialog.message.message).lower()
+    #         await match_sent_message(client, bebra, message)
+    #     except ValueError as e:
+    #         logger.critical(e.__class__.__name__)
+    #         # print(dialog.name)
+    # logger.debug(show_client(client))
 
 
 ####################################################
@@ -277,16 +279,20 @@ def start_event_handler():
     loop.run_forever()
 
 
+@logger.catch
+def run_message_checker():
+    logger.info("Begin check")
+    for current_client in clients:
+        global client
+        with current_client as client:
+            client.session.save_entities = False
+            client.loop.run_until_complete(check_new_messages())
+    logger.success("")
+
+
 ####################################################
 
+
 if __name__ == "__main__":
-    try:
-        logger.info("Begin check")
-        for current_client in clients:
-            with current_client as client:
-                client.session.save_entities = False
-                client.loop.run_until_complete(check_new_messages())
-        logger.success("")
-        start_event_handler()
-    except Exception as e:
-        logger.error(repr(e))
+    run_message_checker()
+    start_event_handler()
