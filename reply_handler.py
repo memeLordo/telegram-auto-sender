@@ -2,20 +2,18 @@ import asyncio
 
 from loguru import logger
 from telethon import TelegramClient, events
-from telethon.types import PeerUser, User
+from telethon.types import User
 
 import config
 from messages_config import reply_finish, reply_massage
 
 # logger.remove()
-logger.add(
-    "process.log",
-    format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
-    level="INFO",
-    rotation="10 MB",
-    retention="2 days",
-    compression="zip"
-)
+logger.add("process.log",
+           format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
+           level="INFO",
+           rotation="10 MB",
+           retention="2 days",
+           compression="zip")
 
 ####################################################
 
@@ -25,11 +23,8 @@ def say_hi(name):
         message = 'Привет, рад, что вы откликнулись на вакансию 🔥\n'
     else:
         message = f'Привет {name}, рад, что вы откликнулись на вакансию 🔥\n'
-    message = (
-        message
-        + 'Расскажите подробнее о вашем опыте работы,' +
-        ' чтобы я смог узнать о вас побольше)'
-    )
+    message = (message + 'Расскажите подробнее о вашем опыте работы,' +
+               ' чтобы я смог узнать о вас побольше)')
     return message
 
 
@@ -65,6 +60,7 @@ def add_count(client):
 
 ####################################################
 
+
 @logger.catch
 async def sent_reply_start(client, bebra, error_exit=False):
 
@@ -87,8 +83,7 @@ async def sent_reply_start(client, bebra, error_exit=False):
         async with client.action(bebra, 'typing'):
             await asyncio.sleep(5)
             await client.send_message(sender, reply_massage)
-            logger.debug(
-                f'{show_client(client)}: message sent to {log_name}')
+            logger.debug(f'{show_client(client)}: message sent to {log_name}')
 
     except ValueError:
         logger.error(f'{show_client(client)}: {log_name} is unknown')
@@ -132,8 +127,7 @@ async def sent_reply(client, bebra, message, error_exit=False):
         async with client.action(bebra.username, 'typing'):
             await asyncio.sleep(4)
             await client.send_message(sender, message)
-            logger.debug(
-                f'{show_client(client)}: message sent to {log_name}')
+            logger.debug(f'{show_client(client)}: message sent to {log_name}')
     except ValueError:
         logger.error(f'{show_client(client)}: {log_name} is unknown')
 
@@ -162,44 +156,35 @@ async def match_sent_message(client, user, message):
         return
     # logger.debug(user.username)
     if 'заполнил' in message or '+' == message:
-        await client.loop.create_task(
-            sent_reply(client, user, reply_finish)
-        )
+        await client.loop.create_task(sent_reply(client, user, reply_finish))
         return
     elif any(key == message for key in ['работа', 'ассистент']):
-        await client.loop.create_task(
-            sent_reply_start(client, user)
-        )
+        await client.loop.create_task(sent_reply_start(client, user))
         return
 
 
 ####################################################
 
+
 @logger.catch
 @client1.on(events.NewMessage)
 async def handle_new_message1(event):
     bebra = await event.get_sender()
-    await match_sent_message(client1,
-                             bebra,
-                             event.raw_text.lower())
+    await match_sent_message(client1, bebra, event.raw_text.lower())
 
 
 @logger.catch
 @client2.on(events.NewMessage)
 async def handle_new_message2(event):
     bebra = await event.get_sender()
-    await match_sent_message(client2,
-                             bebra,
-                             event.raw_text.lower())
+    await match_sent_message(client2, bebra, event.raw_text.lower())
 
 
 @logger.catch
 @client3.on(events.NewMessage)
 async def handle_new_message3(event):
     bebra = await event.get_sender()
-    await match_sent_message(client3,
-                             bebra,
-                             event.raw_text.lower())
+    await match_sent_message(client3, bebra, event.raw_text.lower())
 
 
 ####################################################
@@ -214,8 +199,7 @@ async def check_new_messages():
     async for dialog in dialogs:
         try:
             bebra = dialog.entity
-            await match_sent_message(client,
-                                     bebra,
+            await match_sent_message(client, bebra,
                                      str(dialog.message.message).lower())
         except ValueError as e:
             logger.critical(e.__class__.__name__)
@@ -237,7 +221,6 @@ def start_event_handler():
 
 
 ####################################################
-
 
 if __name__ == '__main__':
     try:
