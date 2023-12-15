@@ -166,6 +166,17 @@ async def handle_new_message1(event):
 async def handle_new_message2(event):
     bebra = await event.get_sender()
     await match_sent_message(client2, bebra, event.raw_text.lower())
+class UserStatus(Enum):
+    INIT_ = auto()
+    WAIT_FORM = auto()
+    WAIT_ = auto()
+    DONE = auto()
+
+
+class UserType(Enum):
+    LEAD = auto()
+    ASSISTANT = auto()
+    OTHER = auto()
 
 
 @logger.catch
