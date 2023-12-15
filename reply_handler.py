@@ -179,11 +179,70 @@ class UserType(Enum):
     OTHER = auto()
 
 
+state_database = {}
+type_database = {}
+
+
+async def run_handler(event):
+    who = event.sender_id
+    type_ = type_database.get(who)
+    state_ = state_database.get(who)
+    logger.trace(f"Type is {type_}")
+
+    match type_:
+        case None:
+            type_database[who] = define_type_by_message(event.text)
+            if type_database[who] == UserType.ASSISTANT:
+                await run_handler(event)
+                return
+        # TODO: проверять дальше, если не None
+        case UserType.ASSISTANT:
+            match state_:
+                case None:
+                    state_database[who] = UserStatus.WAIT_FORM
+                    await event.mark_read()
+                    await event.respond("Привет.")
+                case UserStatus.WAIT_FORM:
+                    await event.mark_read()
+                    await event.respond("Подожди.")
+                    state_database[who] = UserStatus.WAIT_
+                case UserStatus.WAIT_:
+                    await event.mark_read()
+                    await event.respond("Чем могу помочь?")
+                    state_database[who] = UserStatus.DONE
+                case UserStatus.DONE:
+                    await event.respond("Всё кончено.")
+                    # state_database[who] = UserStatus.WAIT_
+                    pass
+                case _:
+                    # TODO: отправить сообщение мне с этого аккаунта.
+                    pass
+            logger.info(state_database[who])
+
+        case UserType.LEAD:
+            pass
+
+
 @logger.catch
-@client3.on(events.NewMessage)
-async def handle_new_message3(event):
-    bebra = await event.get_sender()
-    await match_sent_message(client3, bebra, event.raw_text.lower())
+# @client1.on(events.NewMessage(func=lambda e: e.is_private))
+# @client2.on(events.NewMessage(func=lambda e: e.is_private))
+@client3.on(events.NewMessage(func=lambda e: e.is_private))
+async def handler(event):
+    # sender = await event.get_sender()
+    # print(event)
+
+    await run_handler(event)
+    #
+    #     case UserState.WAIT_FORM:
+    #         name = event.text  # Save the name wherever you want
+    #         await event.respond(Reply.FORM)
+    #         state_database[who] = UserState.WAIT_AGE
+    #
+    #     case UserState.WAIT_AGE:
+    #         age = event.text  # Save the age wherever you want
+    #         await event.respond(Reply.FINISH)
+    #         # Conversation is done so we can forget the state of this user
+    #         del state_database[who]
 
 
 ####################################################
