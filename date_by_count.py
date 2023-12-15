@@ -1,11 +1,11 @@
 import sys
 from datetime import datetime
 
+import config
+
 from loguru import logger
 from telethon import types
 from telethon.sync import TelegramClient
-
-import config
 
 logger.remove()
 logger.add(sys.stderr, level="DEBUG")
