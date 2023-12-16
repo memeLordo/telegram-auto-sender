@@ -4,7 +4,7 @@ import sys
 from enum import auto, Enum
 
 from loguru import logger
-from messages_config import Reply
+from messages_config import Keywords, Reply
 from reply_walker import client1, client2, client3, run_message_checker
 from telethon import events
 
@@ -28,24 +28,50 @@ def add_count(client):
 
 
 ####################################################
-keywords = ["гладиолус"]
+class UserStatus(Enum):
+    WAIT_FIRST_MESSAGE = "WAIT_FIRST_MESSAGE"
+    WAIT_FORM = "WAIT_FORM"
+    TROUBLE_FORM = "TROUBLE_FORM"
+    DONE = "DONE"
+
+
+class UserType(Enum):
+    LEAD = "Lead"
+    ASSISTANT = "Assistant"
+    OTHER = "Other"
+
+
+####################################################
+state_database = {}
+type_database = {}
 
 
 def remove_punct(s):
     return s.translate(str.maketrans("", "", string.punctuation))
 
 
-def define_type_by_message(message):
-    form_message = remove_punct(message).lower()
+def define_type_by_message(event):
+    form_message = remove_punct(event.text).lower()
     logger.trace(form_message)
-    if any(key in form_message for key in keywords):
+    if any(key in form_message for key in Keywords.STARTING_MESSAGE):
         return UserType.ASSISTANT
 
 
 def check_key_word(event, state):
+    form_message = remove_punct(event.text).lower()
     match state:
-        case None:
+        case UserStatus.WAIT_FORM:
+            keywords = Keywords.FORM
+            if not any(key in form_message for key in keywords):
+                state_database[event.sender_id] = UserStatus.TROUBLE_FORM
+        case UserStatus.TROUBLE_FORM:
+            keywords = Keywords.TROUBLE + Keywords.FORM
+            # await event.respond("Всё кончено.")
+            # state_database[who] = UserStatus.FINISH
             pass
+    if any(key in form_message for key in keywords):
+        return True
+    return False
 
 
 # async def match_sent_message(client, user, message):
@@ -61,21 +87,6 @@ def check_key_word(event, state):
 
 
 ####################################################
-class UserStatus(Enum):
-    INIT_ = auto()
-    WAIT_FORM = auto()
-    FINISH = auto()
-    DONE = auto()
-
-
-class UserType(Enum):
-    LEAD = auto()
-    ASSISTANT = auto()
-    OTHER = auto()
-
-
-state_database = {}
-type_database = {}
 
 
 async def run_handler(event):
@@ -86,28 +97,28 @@ async def run_handler(event):
 
     match type_:
         case None:
-            type_database[who] = define_type_by_message(event.text)
+            type_database[who] = define_type_by_message(event)
             if type_database[who] == UserType.ASSISTANT:
+                state_database[who] = UserStatus.WAIT_FIRST_MESSAGE
                 await run_handler(event)
                 return
         # TODO: проверять дальше, если не None
         case UserType.ASSISTANT:
             match state_:
-                case None:
-                    state_database[who] = UserStatus.WAIT_FORM
+                case UserStatus.WAIT_FIRST_MESSAGE:
                     await event.mark_read()
                     # await event.respond("Start message.")
-                case UserStatus.WAIT_FORM:
-                    if check_key_word(event, state_):
-                        await event.mark_read()
-                        await event.respond("Подожди.")
-                    state_database[who] = UserStatus.FINISH
+                    state_database[who] = UserStatus.WAIT_FORM
 
-                case UserStatus.FINISH:
+                case UserStatus.WAIT_FORM | UserStatus.TROUBLE_FORM:
                     if check_key_word(event, state_):
                         await event.mark_read()
-                        await event.respond("Чем могу помочь?")
+                        await event.respond("Отлично. Ожидайте результата!")
                         state_database[who] = UserStatus.DONE
+                case UserStatus.TROUBLE_REPLY:
+                    await event.mark_read()
+                    await event.respond("Пожалуйста, сообщите, когда....")
+                    state_database[who] = UserStatus.WAIT_FORM
 
                 case UserStatus.DONE:
                     # await event.respond("Всё кончено.")
