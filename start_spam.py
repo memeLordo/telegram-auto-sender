@@ -126,9 +126,12 @@ def choose_clients(client_list):
 
 
 if __name__ == "__main__":
-    clients = choose_clients(clients)
-    for current_client in clients:
-        with current_client as client:
-            client.session.save_entities = False
-            client.loop.run_until_complete(start())
-    logger.success(f"Total count: {count}")
+    try:
+        clients = choose_clients(clients)
+        for current_client in clients:
+            with current_client as client:
+                client.session.save_entities = False
+                client.loop.run_until_complete(start())
+        logger.success(f"Total count: {count}")
+    except KeyboardInterrupt:
+        pass
