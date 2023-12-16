@@ -157,5 +157,8 @@ def start_event_handler():
 
 ####################################################
 if __name__ == "__main__":
-    # run_message_checker()
-    start_event_handler()
+    try:
+        # run_message_checker()
+        start_event_handler()
+    except KeyboardInterrupt:
+        pass
