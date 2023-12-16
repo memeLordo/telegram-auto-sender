@@ -154,6 +154,12 @@ def define_type_by_message(message):
         return UserType.ASSISTANT
 
 
+def check_key_word(event, state):
+    match state:
+        case None:
+            pass
+
+
 # async def match_sent_message(client, user, message):
 #     if not isinstance(user, User) or user.bot:
 #         return
@@ -170,7 +176,7 @@ def define_type_by_message(message):
 class UserStatus(Enum):
     INIT_ = auto()
     WAIT_FORM = auto()
-    WAIT_ = auto()
+    FINISH = auto()
     DONE = auto()
 
 
@@ -202,18 +208,22 @@ async def run_handler(event):
                 case None:
                     state_database[who] = UserStatus.WAIT_FORM
                     await event.mark_read()
-                    await event.respond("Привет.")
+                    # await event.respond("Start message.")
                 case UserStatus.WAIT_FORM:
-                    await event.mark_read()
-                    await event.respond("Подожди.")
-                    state_database[who] = UserStatus.WAIT_
-                case UserStatus.WAIT_:
-                    await event.mark_read()
-                    await event.respond("Чем могу помочь?")
-                    state_database[who] = UserStatus.DONE
+                    if check_key_word(event, state_):
+                        await event.mark_read()
+                        await event.respond("Подожди.")
+                    state_database[who] = UserStatus.FINISH
+
+                case UserStatus.FINISH:
+                    if check_key_word(event, state_):
+                        await event.mark_read()
+                        await event.respond("Чем могу помочь?")
+                        state_database[who] = UserStatus.DONE
+
                 case UserStatus.DONE:
-                    await event.respond("Всё кончено.")
-                    # state_database[who] = UserStatus.WAIT_
+                    # await event.respond("Всё кончено.")
+                    # state_database[who] = UserStatus.FINISH
                     pass
                 case _:
                     # TODO: отправить сообщение мне с этого аккаунта.
