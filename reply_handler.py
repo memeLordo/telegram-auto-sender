@@ -1,7 +1,7 @@
 import asyncio
 import string
 import sys
-from enum import auto, Enum
+from enum import Enum
 
 from loguru import logger
 from messages_config import Keywords, Reply
@@ -31,7 +31,7 @@ def add_count(client):
 class UserStatus(Enum):
     WAIT_FIRST_MESSAGE = "WAIT_FIRST_MESSAGE"
     WAIT_FORM = "WAIT_FORM"
-    TROUBLE_FORM = "TROUBLE_FORM"
+    # TROUBLE_FORM = "TROUBLE_FORM"
     DONE = "DONE"
 
 
@@ -51,25 +51,24 @@ def remove_punct(s):
 
 
 def define_type_by_message(event):
-    form_message = remove_punct(event.text).lower()
-    logger.trace(form_message)
-    if any(key in form_message for key in Keywords.STARTING_MESSAGE):
+    message_set = set(remove_punct(event.text).lower().split(" "))
+    logger.trace(message_set)
+    if message_set & set(Keywords.FIRST_MESSAGE):
         return UserType.ASSISTANT
 
 
 def check_key_word(event, state):
-    form_message = remove_punct(event.text).lower()
+    message_set = set(remove_punct(event.text).lower().split(" "))
     match state:
         case UserStatus.WAIT_FORM:
-            keywords = Keywords.FORM
-            if not any(key in form_message for key in keywords):
-                state_database[event.sender_id] = UserStatus.TROUBLE_FORM
-        case UserStatus.TROUBLE_FORM:
-            keywords = Keywords.TROUBLE + Keywords.FORM
+            keywords = set(Keywords.FORM)
+
+            # case UserStatus.TROUBLE_FORM:
+            #     keywords = set(Keywords.TROUBLE + Keywords.FORM)
             # await event.respond("Всё кончено.")
             # state_database[who] = UserStatus.FINISH
             pass
-    if any(key in form_message for key in keywords):
+    if message_set & keywords:
         return True
     return False
 
@@ -91,6 +90,8 @@ def check_key_word(event, state):
 
 async def run_handler(event):
     who = event.sender_id
+    sender = await event.get_sender()
+    sender_name = sender.first_name.split(" ")[0]
     type_ = type_database.get(who)
     state_ = state_database.get(who)
     logger.trace(f"Type is {type_}")
@@ -107,18 +108,24 @@ async def run_handler(event):
             match state_:
                 case UserStatus.WAIT_FIRST_MESSAGE:
                     await event.mark_read()
-                    # await event.respond("Start message.")
+                    async with event.action("typing"):
+                        await asyncio.sleep(4)
+                        await event.respond(Reply.say_hi(sender_name))
+                        await asyncio.sleep(6)
+                        await event.respond(Reply.FORM)
                     state_database[who] = UserStatus.WAIT_FORM
 
-                case UserStatus.WAIT_FORM | UserStatus.TROUBLE_FORM:
+                case UserStatus.WAIT_FORM:
                     if check_key_word(event, state_):
                         await event.mark_read()
-                        await event.respond("Отлично. Ожидайте результата!")
+                        async with event.action("typing"):
+                            await asyncio.sleep(4)
+                            await event.respond(Reply.FINISH)
                         state_database[who] = UserStatus.DONE
-                case UserStatus.TROUBLE_REPLY:
-                    await event.mark_read()
-                    await event.respond("Пожалуйста, сообщите, когда....")
-                    state_database[who] = UserStatus.WAIT_FORM
+                # case UserStatus.TROUBLE_REPLY:
+                #     await event.mark_read()
+                #     await event.respond("Пожалуйста, сообщите, когда....")
+                #     state_database[who] = UserStatus.WAIT_FORM
 
                 case UserStatus.DONE:
                     # await event.respond("Всё кончено.")
