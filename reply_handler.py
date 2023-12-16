@@ -5,7 +5,7 @@ from enum import Enum
 
 from loguru import logger
 from messages_config import Keywords, Reply
-from reply_walker import client1, client2, client3, run_message_checker
+from reply_walker import client1, client2, client3
 from telethon import events
 
 
@@ -45,8 +45,11 @@ state_database = {}
 type_database = {}
 
 
-def remove_punct(s):
-    return s.translate(str.maketrans("", "", string.punctuation))
+def remove_punct(text):
+    result = text.translate(
+        str.maketrans("", "", (string.punctuation).replace("+", ""))
+    )
+    return result
 
 
 def define_type_by_message(event):
