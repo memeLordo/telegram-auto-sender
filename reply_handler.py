@@ -5,15 +5,12 @@ from enum import Enum
 
 from loguru import logger
 from messages_config import Keywords, Reply
-from reply_walker import client1, client2, client3, run_message_checker
+from reply_walker import client1, client2, client3
 from telethon import events
 
-# from telethon.types import User
 
-# logger.remove()
-
+logger.remove()
 logger.add(sys.stderr, level="TRACE")
-
 
 ####################################################
 
@@ -28,6 +25,8 @@ def add_count(client):
 
 
 ####################################################
+
+
 class UserStatus(Enum):
     WAIT_FIRST_MESSAGE = "WAIT_FIRST_MESSAGE"
     WAIT_FORM = "WAIT_FORM"
@@ -46,8 +45,11 @@ state_database = {}
 type_database = {}
 
 
-def remove_punct(s):
-    return s.translate(str.maketrans("", "", string.punctuation))
+def remove_punct(text):
+    result = text.translate(
+        str.maketrans("", "", (string.punctuation).replace("+", ""))
+    )
+    return result
 
 
 def define_type_by_message(event):
@@ -73,18 +75,6 @@ def check_key_word(event, state):
     return False
 
 
-# async def match_sent_message(client, user, message):
-#     if not isinstance(user, User) or user.bot:
-#         return
-#     # logger.debug(user.username)
-#     if "заполнил" in message or "+" == message:
-#         await client.loop.create_task(sent_reply(client, user, Reply.FINISH))
-#         return
-#     elif any(key == message for key in ["работа", "ассистент"]):
-#         await client.loop.create_task(sent_reply_start(client, user))
-#         return
-
-
 ####################################################
 
 
@@ -107,8 +97,9 @@ async def run_handler(event):
         case UserType.ASSISTANT:
             match state_:
                 case UserStatus.WAIT_FIRST_MESSAGE:
+                    await asyncio.sleep(1)
                     await event.mark_read()
-                    async with event.action("typing"):
+                    async with event.client.action(sender, "typing"):
                         await asyncio.sleep(4)
                         await event.respond(Reply.say_hi(sender_name))
                         await asyncio.sleep(6)
@@ -117,8 +108,9 @@ async def run_handler(event):
 
                 case UserStatus.WAIT_FORM:
                     if check_key_word(event, state_):
+                        await asyncio.sleep(1)
                         await event.mark_read()
-                        async with event.action("typing"):
+                        async with event.client.action(sender, "typing"):
                             await asyncio.sleep(4)
                             await event.respond(Reply.FINISH)
                         state_database[who] = UserStatus.DONE
@@ -165,5 +157,8 @@ def start_event_handler():
 
 ####################################################
 if __name__ == "__main__":
-    run_message_checker()
-    start_event_handler()
+    try:
+        # run_message_checker()
+        start_event_handler()
+    except KeyboardInterrupt:
+        pass

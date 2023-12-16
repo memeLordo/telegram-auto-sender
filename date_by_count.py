@@ -74,13 +74,16 @@ def choose_date():
 
 if __name__ == "__main__":
     global todate, count
-    todate = choose_date()
-    count = dict.fromkeys(todate, 0)
-    logger.trace(count)
+    try:
+        todate = choose_date()
+        count = dict.fromkeys(todate, 0)
+        logger.trace(count)
 
-    for current_client in clients:
-        with current_client as client:
-            client.session.save_entities = False
-            client.loop.run_until_complete(start())
-    for key, value in count.items():
-        print(f"{key}\t{value}")
+        for current_client in clients:
+            with current_client as client:
+                client.session.save_entities = False
+                client.loop.run_until_complete(start())
+        for key, value in count.items():
+            print(f"{key}\t{value}")
+    except KeyboardInterrupt:
+        pass
