@@ -5,7 +5,7 @@ import sys
 import config
 
 from loguru import logger
-from messages_config import ad_3_FreeAssist, ad_3_NewFA
+from messages_config import Ads
 from telethon import errors, functions
 from telethon.sync import TelegramClient
 from telethon.tl import types
@@ -64,11 +64,11 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
 
                 match title:
                     case "Free assist":
-                        await send_message_to_channel(result, ad_3_FreeAssist)
+                        await send_message_to_channel(result, Ads.FREE_ASSIST)
                         await asyncio.sleep(3)
 
                     case "Новые FA":
-                        await send_message_to_channel(result, ad_3_NewFA)
+                        await send_message_to_channel(result, Ads.NEW_FA)
                         await asyncio.sleep(3)
 
                     # case 'КазаньSMS':
@@ -126,9 +126,12 @@ def choose_clients(client_list):
 
 
 if __name__ == "__main__":
-    clients = choose_clients(clients)
-    for current_client in clients:
-        with current_client as client:
-            client.session.save_entities = False
-            client.loop.run_until_complete(start())
-    logger.success(f"Total count: {count}")
+    try:
+        clients = choose_clients(clients)
+        for current_client in clients:
+            with current_client as client:
+                client.session.save_entities = False
+                client.loop.run_until_complete(start())
+        logger.success(f"Total count: {count}")
+    except KeyboardInterrupt:
+        pass
