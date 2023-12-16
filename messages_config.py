@@ -82,6 +82,19 @@ class Ads:
     )
 
 
+class Keywords:
+    FIRST_MESSAGE = ["рабоt", "work"]
+    FORM = [
+        "заполнил",
+        "заполнила",
+        "отправил",
+        "отправила",
+        "прислал",
+        "прислала",
+        "+",
+    ]
+
+
 class Reply:
     def say_hi(name=None):
         name = "" if name is None else f" {name}"
