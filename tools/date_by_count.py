@@ -1,28 +1,13 @@
 import sys
 from datetime import datetime
 
-import config
-
 from loguru import logger
 from telethon import types
-from telethon.sync import TelegramClient
+
+from .clients import clients, show_client
 
 logger.remove()
 logger.add(sys.stderr, level="DEBUG")
-
-client1 = TelegramClient("count1", config.api_id, config.api_hash)
-client2 = TelegramClient("count2", config.api_id2, config.api_hash2)
-client3 = TelegramClient("count3", config.api_id2, config.api_hash2)
-clients = [client1, client2, client3]
-
-
-def show_client(client):
-    if client == client1:
-        return "client1"
-    elif client == client2:
-        return "client2"
-    else:
-        return "client3"
 
 
 @logger.catch

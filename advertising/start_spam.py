@@ -1,23 +1,17 @@
 # import json
 import asyncio
-import sys
 
-import config
+from config.messages import Ads, Keywords
 
 from loguru import logger
-from messages_config import ad_3_FreeAssist, ad_3_NewFA
 from telethon import errors, functions
-from telethon.sync import TelegramClient
 from telethon.tl import types
 
-clients = [
-    TelegramClient("session1", config.api_id, config.api_hash),
-    TelegramClient("session2", config.api_id2, config.api_hash2),
-    TelegramClient("session3", config.api_id2, config.api_hash2),
-]
+from .clients import choose_clients, clients
+
 
 logger.add(
-    "process_main.log",
+    "ads_main.log",
     format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
     level="INFO",
     rotation="10 MB",
@@ -25,7 +19,7 @@ logger.add(
     compression="zip",
 )
 
-SEARCHED_DIRS = ["Новые FA", "Free assist"]
+
 count = 0
 
 
@@ -51,7 +45,7 @@ async def start():
 
 
 # @logger.catch
-async def send_to_channels(request, dirs=SEARCHED_DIRS):
+async def send_to_channels(request, dirs=Keywords.SEARCHED_DIRS):
     for dialog_filter in request:
         result = dialog_filter.to_dict()
         try:
@@ -64,11 +58,11 @@ async def send_to_channels(request, dirs=SEARCHED_DIRS):
 
                 match title:
                     case "Free assist":
-                        await send_message_to_channel(result, ad_3_FreeAssist)
+                        await send_message_to_channel(result, Ads.FREE_ASSIST)
                         await asyncio.sleep(3)
 
                     case "Новые FA":
-                        await send_message_to_channel(result, ad_3_NewFA)
+                        await send_message_to_channel(result, Ads.NEW_FA)
                         await asyncio.sleep(3)
 
                     # case 'КазаньSMS':
@@ -116,13 +110,6 @@ async def send_message_to_channel(result, message):
         #     logger.info(repr(e))
 
     # loop = asyncio.get_event_loop()
-
-
-def choose_clients(client_list):
-    key_clients = sys.argv[1: 3 + 1]
-    if not key_clients:
-        return client_list
-    return list(client_list[int(x) - 1] for x in key_clients)
 
 
 if __name__ == "__main__":
