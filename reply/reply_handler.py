@@ -1,55 +1,22 @@
 import asyncio
-import string
 import sys
-from enum import Enum
+
+from config.messages import Keywords, Reply
 
 from loguru import logger
-from messages_config import Keywords, Reply
-from reply_walker import client1, client2, client3
 from telethon import events
+from tools.editor import remove_punct
+
+from .clients import client1, client2, client3
+from .tags import UserStatus, UserType
 
 
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
-####################################################
 
-
-def add_count(client):
-    if client == client1:
-        pass
-    if client == client2:
-        pass
-    if client == client3:
-        pass
-
-
-####################################################
-
-
-class UserStatus(Enum):
-    WAIT_FIRST_MESSAGE = "WAIT_FIRST_MESSAGE"
-    WAIT_FORM = "WAIT_FORM"
-    # TROUBLE_FORM = "TROUBLE_FORM"
-    DONE = "DONE"
-
-
-class UserType(Enum):
-    LEAD = "Lead"
-    ASSISTANT = "Assistant"
-    OTHER = "Other"
-
-
-####################################################
 state_database = {}
 type_database = {}
-
-
-def remove_punct(text):
-    result = text.translate(
-        str.maketrans("", "", (string.punctuation).replace("+", ""))
-    )
-    return result
 
 
 def define_type_by_message(event):

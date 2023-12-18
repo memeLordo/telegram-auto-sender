@@ -83,7 +83,7 @@ class Ads:
 
 
 class Keywords:
-    FIRST_MESSAGE = ["рабоt", "work"]
+    FIRST_MESSAGE = ["работа"]
     FORM = [
         "заполнил",
         "заполнила",
@@ -93,6 +93,7 @@ class Keywords:
         "прислала",
         "+",
     ]
+    SEARCHED_DIRS = ["Новые FA", "Free assist"]
 
 
 class Reply:
@@ -105,7 +106,7 @@ class Reply:
         )
 
     FORM = (
-        "Кстати, вы можете пока заполнить форму,"
+        "Для того, чтобы принять вашу заявку, вам нужно будет заполнить форму,"
         " которая пойдёт непосредственно директору для ознакомления. "
         "Вот ссылка на неё:\n"
         "https://docs.google.com/forms/d/e/"

@@ -1,7 +1,7 @@
 def convert_to_string_format(input_file_path):
     try:
         # Чтение содержимого файла
-        with open(input_file_path, 'r', encoding='utf-8') as file:
+        with open(input_file_path, "r", encoding="utf-8") as file:
             while True:
                 line = file.readline()
                 if not line:
@@ -17,6 +17,6 @@ def convert_to_string_format(input_file_path):
 
 
 # Пример использования
-input_file_path = 'input.txt'
+input_file_path = "./input.txt"
 
 convert_to_string_format(input_file_path)

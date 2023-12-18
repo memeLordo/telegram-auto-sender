@@ -1,15 +1,10 @@
 import asyncio
 
-import config
+from config.messages import Keywords, Reply
 from loguru import logger
-from messages_config import Reply
-from telethon import TelegramClient
+from tools.editor import remove_punct
 
-client1 = TelegramClient("r_session1", config.api_id, config.api_hash)
-client2 = TelegramClient("r_session2", config.api_id2, config.api_hash2)
-client3 = TelegramClient("r_session3", config.api_id2, config.api_hash2)
-
-clients = [client1, client2, client3]
+from .clients import clients, show_client
 
 logger.add(
     "process.log",
@@ -19,15 +14,6 @@ logger.add(
     retention="2 days",
     compression="zip",
 )
-
-
-def show_client(client):
-    if client == client1:
-        return "client1"
-    elif client == client2:
-        return "client2"
-    else:
-        return "client3"
 
 
 @logger.catch
@@ -71,9 +57,6 @@ async def sent_reply_start(client, bebra, error_exit=False):
                 logger.critical(repr(e))
 
 
-#############
-
-
 @logger.catch
 async def sent_reply(client, bebra, message, error_exit=False):
     log_name = bebra.first_name
@@ -81,7 +64,6 @@ async def sent_reply(client, bebra, message, error_exit=False):
     logger.info(f"{show_client(client)}: got message from {log_name}")
     await asyncio.sleep(1)
 
-    #############
     try:
         await client.send_read_acknowledge(sender)
 
@@ -108,21 +90,29 @@ async def sent_reply(client, bebra, message, error_exit=False):
                 logger.critical(repr(e))
 
 
+async def match_sent_message(client, user, message):
+    # logger.opt(colors=True).debug(f"<white>{message}</white>")
+    r_message = set(remove_punct(message).split(" "))
+    key = set(Keywords.FIRST_MESSAGE)
+    if key & r_message:
+        await sent_reply_start(client, user)
+
+
 @logger.catch
 async def check_new_messages():
     await client.start()
     dialogs = client.iter_dialogs()
-    print(dialogs)
 
-    # async for dialog in dialogs:
-    #     try:
-    #         bebra = dialog.entity
-    #         message = str(dialog.message.message).lower()
-    #         await match_sent_message(client, bebra, message)
-    #     except ValueError as e:
-    #         logger.critical(e.__class__.__name__)
-    #         # print(dialog.name)
-    # logger.debug(show_client(client))
+    async for dialog in dialogs:
+        try:
+            bebra = dialog.entity
+            message = str(dialog.message.message).lower()
+
+            await match_sent_message(client, bebra, message)
+        except ValueError as e:
+            logger.critical(e.__class__.__name__)
+            # print(dialog.name)
+    logger.debug(show_client(client))
 
 
 @logger.catch
@@ -134,3 +124,11 @@ def run_message_checker():
             client.session.save_entities = False
             client.loop.run_until_complete(check_new_messages())
     logger.success("")
+
+
+if __name__ == "__main__":
+    try:
+        run_message_checker()
+        # start_event_handler()
+    except KeyboardInterrupt:
+        pass
