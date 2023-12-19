@@ -96,6 +96,8 @@ async def match_sent_message(client, user, message):
     key = set(Keywords.FIRST_MESSAGE)
     if key & r_message:
         await sent_reply_start(client, user)
+    upprove = Keywords.FIRST_MESSAGE
+    ignore = Keywords.IGNORE
 
 
 @logger.catch
