@@ -32,7 +32,7 @@ def remove_emoji(string):
 def remove_punct(text):
     def ignore_chars(text, chars_to_ignose=["+", "@"]):
         for char in chars_to_ignose:
-            text.replace(char, "")
+            text = text.replace(char, "")
         return text
 
     result = remove_emoji(
