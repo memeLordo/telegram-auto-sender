@@ -1,4 +1,5 @@
 *.session*
 *.log
 *.txt
-exclude_data.json
+*.json
+test.py
