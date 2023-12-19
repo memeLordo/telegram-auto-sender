@@ -40,13 +40,13 @@ def check_key_word(event, state):
 async def run_handler(event):
     who = event.sender_id
     sender = await event.get_sender()
-    sender_name = sender.first_name.split(" ")[0]
     type_ = type_database.get(who)
     state_ = state_database.get(who)
     logger.trace(f"Type is {type_}")
 
     match type_:
         case None:
+            # TODO: set type function
             type_database[who] = define_type_by_message(event)
             if type_database[who] == UserType.ASSISTANT:
                 state_database[who] = UserStatus.WAIT_FIRST_MESSAGE
@@ -56,6 +56,7 @@ async def run_handler(event):
         case UserType.ASSISTANT:
             match state_:
                 case UserStatus.WAIT_FIRST_MESSAGE:
+                    sender_name = sender.first_name.split(" ")[0]
                     await asyncio.sleep(1)
                     await event.mark_read()
                     async with event.client.action(sender, "typing"):
@@ -63,6 +64,7 @@ async def run_handler(event):
                         await event.respond(Reply.say_hi(sender_name))
                         await asyncio.sleep(6)
                         await event.respond(Reply.FORM)
+                    # TODO: change status to function
                     state_database[who] = UserStatus.WAIT_FORM
 
                 case UserStatus.WAIT_FORM:
@@ -72,6 +74,7 @@ async def run_handler(event):
                         async with event.client.action(sender, "typing"):
                             await asyncio.sleep(4)
                             await event.respond(Reply.FINISH)
+                        # TODO: change status to function
                         state_database[who] = UserStatus.DONE
                 # case UserStatus.TROUBLE_REPLY:
                 #     await event.mark_read()
@@ -85,6 +88,7 @@ async def run_handler(event):
                 case _:
                     # TODO: отправить сообщение мне с этого аккаунта.
                     pass
+            # TODO: return status function
             logger.info(state_database[who])
 
         case UserType.LEAD:
