@@ -103,24 +103,19 @@ async def sent_reply(client, bebra, message, error_exit=False):
 
 async def match_sent_message(client, user, from_user, message, c_state=None):
     read_message = make_plain(message.message).split(" ")
+    r_message = set(read_message)
     if user != from_user:
-        msg = message.message
-        if Reply.say_hi() in msg:
+        form_set = set(make_plain(Reply.FORM).split(" "))
+        finish_set = set(make_plain(Reply.FINISH).split(" "))
+        # TODO: change state
+        if len(form_set & r_message) / len(form_set) >= 0.7:
             raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
-
-        match msg:
-            case Reply.FORM:
-                # TODO: change state
-                raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
-            case Reply.FINISH:
-                # TODO: change state
-                raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
+        if len(finish_set & r_message) / len(finish_set) == 1:
+            raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
         return
 
     logger.opt(colors=True).debug(
         f"<white>{read_message}</white> : {user.username}")
-    # (r_message)
-    r_message = set(read_message)
     upprove = Keywords.FIRST_MESSAGE
     ignore = Keywords.IGNORE
     if r_message & upprove and not (r_message & ignore):
