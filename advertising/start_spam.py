@@ -70,8 +70,8 @@ async def send_message_to_channel(result, message):
             my_channel = await client.get_entity(types.PeerChannel(channel_id))
 
             async with client.action(my_channel, "typing"):
+                await asyncio.sleep(1)
                 await client.send_message(my_channel, message=message)
-            await asyncio.sleep(1)
             global count
             count += 1
             logger.debug(my_channel.title)
@@ -91,12 +91,18 @@ async def send_message_to_channel(result, message):
         except errors.rpcerrorlist.ChannelPrivateError:
             logger.warning(f"Private: {my_channel.title}")
             # logger.info(repr(e))
-
-        # except Exception as e:
-        #     logger.info('Error: ', my_channel.title)
-        #     logger.info(repr(e))
-
-    # loop = asyncio.get_event_loop()
+        except ValueError:
+            logger.error("Value error!")
+            dialogs = client.iter_dialogs()
+            async for dialog in dialogs:
+                try:
+                    if dialog.entity.id == channel_id:
+                        logger.info("Channel's ID found")
+                        my_channel = dialog.entity
+                        await client.send_message(my_channel, message=message)
+                        break
+                except ValueError:
+                    continue
 
 
 @logger.catch
