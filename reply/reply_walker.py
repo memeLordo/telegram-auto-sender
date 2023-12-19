@@ -126,6 +126,24 @@ async def match_sent_message(client, user, from_user, message, c_state=None):
         # await sent_reply_start(client, user)
 
 
+async def match_messages_from(client, user, from_user):
+    user_messages = await client.get_messages(
+        entity=user,
+        from_user=from_user,
+        limit=3,
+        # reverse=True,
+    )
+    if user_messages.total > 5:
+        return
+    user_messages = filter(lambda x: (
+        tday - x.date.date()).days <= 14, user_messages)
+
+    for message in user_messages:
+        if not message.message:
+            continue
+        await match_sent_message(client, user, from_user, message)
+
+
 @logger.catch
 async def check_new_messages():
     await client.start()
@@ -140,44 +158,10 @@ async def check_new_messages():
                 continue
             logger.debug(bebra.username)
             # Проверяем статус по нашим полследним сообщениям из формы
-            from_user = myself
-            my_messages = await client.get_messages(
-                entity=bebra,
-                from_user=from_user,
-                limit=3,
-                # reverse=True,
-            )
-            if my_messages.total > 5:
-                continue
-            my_messages = filter(
-                lambda x: (tday - x.date.date()).days <= 14, my_messages
-            )
+            await match_messages_from(client, bebra, myself)
 
-            for message in my_messages:
-                if not message.message:
-                    continue
-                await match_sent_message(client, bebra, from_user, message)
             # Далее определяем тип по последним сообщениям пользователя
-
-            from_user = bebra
-            u_messages = await client.get_messages(
-                entity=bebra,
-                from_user=from_user,
-                limit=3,
-                # offset_date=start_date,
-                reverse=True,
-            )
-
-            if u_messages.total > 5:
-                continue
-            u_messages = filter(lambda x: (
-                tday - x.date.date()).days <= 14, u_messages)
-            # logger.debug(f"Stage two: {bebra.username} : {user_messages}")
-            # logger.debug(user_messages)
-            for message in u_messages:
-                if not message.message:
-                    continue
-                await match_sent_message(client, bebra, from_user, message)
+            await match_messages_from(client, bebra, bebra)
 
         except ValueError as e:
             logger.critical(e.__class__.__name__)
