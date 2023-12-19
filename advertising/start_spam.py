@@ -10,20 +10,7 @@ from telethon.tl import types
 from .clients import choose_clients, clients
 
 
-logger.add(
-    "ads_main.log",
-    format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
-    level="INFO",
-    rotation="10 MB",
-    retention="2 days",
-    compression="zip",
-)
-
-
-count = 0
-
-
-@logger.catch
+# @logger.catch
 async def start():
     request = await client(functions.messages.GetDialogFiltersRequest())
 
@@ -114,8 +101,9 @@ async def send_message_to_channel(result, message):
 
 if __name__ == "__main__":
     try:
-        clients = choose_clients(clients)
-        for current_client in clients:
+        count = 0
+        clients_group = choose_clients(clients)
+        for current_client in clients_group:
             with current_client as client:
                 client.session.save_entities = False
                 client.loop.run_until_complete(start())
