@@ -41,3 +41,7 @@ def remove_punct(text):
         )
     )
     return result
+
+
+def make_plain(text):
+    return remove_punct(" ".join(str(text).lower().splitlines()))
