@@ -22,22 +22,14 @@ type_database = {}
 def define_type_by_message(event):
     message_set = set(remove_punct(event.text).lower().split(" "))
     logger.trace(message_set)
-    if message_set & set(Keywords.FIRST_MESSAGE):
+    if message_set & Keywords.FIRST_MESSAGE:
         return UserType.ASSISTANT
 
 
 def check_key_word(event, state):
     message_set = set(remove_punct(event.text).lower().split(" "))
-    match state:
-        case UserStatus.WAIT_FORM:
-            keywords = set(Keywords.FORM)
 
-            # case UserStatus.TROUBLE_FORM:
-            #     keywords = set(Keywords.TROUBLE + Keywords.FORM)
-            # await event.respond("Всё кончено.")
-            # state_database[who] = UserStatus.FINISH
-            pass
-    if message_set & keywords:
+    if message_set & Keywords.FORM:
         return True
     return False
 
