@@ -99,12 +99,14 @@ async def send_message_to_channel(result, message):
     # loop = asyncio.get_event_loop()
 
 
-if __name__ == "__main__":
+@logger.catch
+def main():
     try:
         count = 0
         clients_group = choose_clients(clients)
         for current_client in clients_group:
             with current_client as client:
+                global client
                 client.session.save_entities = False
                 client.loop.run_until_complete(start())
         logger.success(f"Total count: {count}")
