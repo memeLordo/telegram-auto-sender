@@ -4,7 +4,7 @@ import datetime as dt
 from config.messages import Keywords, Reply
 from loguru import logger
 from telethon.types import User
-from tools.editor import remove_punct
+from tools.editor import make_plain
 
 from .clients import clients, show_client
 from .tags import UserStatus
@@ -102,9 +102,7 @@ async def sent_reply(client, bebra, message, error_exit=False):
 
 
 async def match_sent_message(client, user, from_user, message, c_state=None):
-    read_message = remove_punct(
-        " ".join(str(message.message).lower().splitlines())
-    ).split(" ")
+    read_message = make_plain(message.message).split(" ")
     if user != from_user:
         msg = message.message
         if Reply.say_hi() in msg:
