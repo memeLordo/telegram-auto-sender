@@ -1,10 +1,21 @@
 import asyncio
+import datetime as dt
 
 from config.messages import Keywords, Reply
 from loguru import logger
+from telethon.types import User
 from tools.editor import remove_punct
 
 from .clients import clients, show_client
+from .tags import UserStatus
+
+
+class ExitLoop(Exception):
+    pass
+
+
+tday = dt.date.today()
+# start_date = today - dt.timedelta(days=1)
 
 logger.add(
     "process.log",
@@ -90,29 +101,95 @@ async def sent_reply(client, bebra, message, error_exit=False):
                 logger.critical(repr(e))
 
 
-async def match_sent_message(client, user, message):
-    # logger.opt(colors=True).debug(f"<white>{message}</white>")
-    r_message = set(remove_punct(message).split(" "))
-    key = set(Keywords.FIRST_MESSAGE)
-    if key & r_message:
-        await sent_reply_start(client, user)
+async def match_sent_message(client, user, from_user, message, c_state=None):
+    read_message = remove_punct(
+        " ".join(str(message.message).lower().splitlines())
+    ).split(" ")
+    if user != from_user:
+        msg = message.message
+        if Reply.say_hi() in msg:
+            raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
+
+        match msg:
+            case Reply.FORM:
+                # TODO: change state
+                raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
+            case Reply.FINISH:
+                # TODO: change state
+                raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
+        return
+
+    logger.opt(colors=True).debug(
+        f"<white>{read_message}</white> : {user.username}")
+    # (r_message)
+    r_message = set(read_message)
     upprove = Keywords.FIRST_MESSAGE
     ignore = Keywords.IGNORE
+    if r_message & upprove and not (r_message & ignore):
+        match c_state:
+            case None:
+                raise ExitLoop(f"First message sent to {user.username}")
+                # TODO: send start_message to user
+        # await sent_reply_start(client, user)
 
 
 @logger.catch
 async def check_new_messages():
     await client.start()
+    global myself
+    myself = await client.get_me()
     dialogs = client.iter_dialogs()
 
     async for dialog in dialogs:
         try:
             bebra = dialog.entity
-            message = str(dialog.message.message).lower()
+            if not isinstance(bebra, User) or bebra.bot:
+                continue
+            logger.debug(bebra.username)
+            # Проверяем статус по нашим полследним сообщениям из формы
+            from_user = myself
+            my_messages = await client.get_messages(
+                entity=bebra,
+                from_user=from_user,
+                limit=3,
+                # reverse=True,
+            )
+            if my_messages.total > 5:
+                continue
+            my_messages = filter(
+                lambda x: (tday - x.date.date()).days <= 14, my_messages
+            )
 
-            await match_sent_message(client, bebra, message)
+            for message in my_messages:
+                if not message.message:
+                    continue
+                await match_sent_message(client, bebra, from_user, message)
+            # Далее определяем тип по последним сообщениям пользователя
+
+            from_user = bebra
+            u_messages = await client.get_messages(
+                entity=bebra,
+                from_user=from_user,
+                limit=3,
+                # offset_date=start_date,
+                reverse=True,
+            )
+
+            if u_messages.total > 5:
+                continue
+            u_messages = filter(lambda x: (
+                tday - x.date.date()).days <= 14, u_messages)
+            # logger.debug(f"Stage two: {bebra.username} : {user_messages}")
+            # logger.debug(user_messages)
+            for message in u_messages:
+                if not message.message:
+                    continue
+                await match_sent_message(client, bebra, from_user, message)
+
         except ValueError as e:
             logger.critical(e.__class__.__name__)
+        except ExitLoop as e:
+            logger.success(repr(e))
             # print(dialog.name)
     logger.debug(show_client(client))
 
