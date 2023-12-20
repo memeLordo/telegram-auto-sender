@@ -1,4 +1,5 @@
 import sys
+from typing import List
 
 import config
 from telethon import TelegramClient
@@ -10,14 +11,14 @@ client3 = TelegramClient("reply3", config.api_id2, config.api_hash2)
 clients = [client1, client2, client3]
 
 
-def choose_clients(client_list=clients):
+def choose_clients(client_list: List[TelegramClient] = clients) -> list:
     key_clients = sys.argv[1: 3 + 1]
     if not key_clients:
         return client_list
     return list(client_list[int(x) - 1] for x in key_clients)
 
 
-def add_count(client):
+def add_count(client: TelegramClient) -> None:
     if client == client1:
         pass
     if client == client2:
@@ -26,7 +27,7 @@ def add_count(client):
         pass
 
 
-def show_client(client):
+def show_client(client: TelegramClient) -> str:
     if client == client1:
         return "client1"
     elif client == client2:

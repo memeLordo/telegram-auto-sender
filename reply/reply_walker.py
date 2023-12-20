@@ -1,9 +1,11 @@
 import asyncio
 import datetime as dt
+from datetime import date
 
 from config.messages import Deviation, Keywords, Reply
 from loguru import logger
-from telethon.types import User
+from telethon.sync import TelegramClient
+from telethon.types import Message, User
 from tools.editor import make_plain
 
 from .clients import choose_clients, show_client
@@ -14,7 +16,7 @@ class ExitLoop(Exception):
     pass
 
 
-today = dt.date.today()
+today: date = dt.date.today()
 
 logger.add(
     "process.log",
@@ -27,10 +29,12 @@ logger.add(
 
 
 @logger.catch
-async def sent_reply_start(client, bebra, error_exit=False):
-    log_name = bebra.first_name
+async def sent_reply_st(
+    client: TelegramClient, bebra: User, error_exit: bool = False
+) -> None:
+    log_name: str = bebra.first_name
     first_name = bebra.first_name.split(" ")[0]
-    sender = bebra.username
+    sender: str = bebra.username
     if not error_exit:
         logger.info(f"{show_client(client)}: got message from {log_name}")
 
@@ -59,16 +63,18 @@ async def sent_reply_start(client, bebra, error_exit=False):
             try:
                 if dialog.entity.id == bebra.id:
                     logger.info(f"{log_name}'s ID found")
-                    bebra = dialog.entity
+                    bebra: User = dialog.entity
                     # logger.debug(bebra)
-                    await sent_reply_start(client, bebra, True)
+                    await sent_reply_st(client, bebra, True)
                     break
             except Exception as e:
                 logger.critical(repr(e))
 
 
 @logger.catch
-async def sent_reply(client, bebra, message, error_exit=False):
+async def sent_reply(
+    client: User, bebra: User, message: Message, error_exit: bool = False
+) -> None:
     log_name = bebra.first_name
     sender = bebra.username
     logger.info(f"{show_client(client)}: got message from {log_name}")
@@ -92,7 +98,7 @@ async def sent_reply(client, bebra, message, error_exit=False):
             try:
                 if dialog.entity.id == bebra.id:
                     logger.info(f"{log_name}'s ID found")
-                    bebra = dialog.entity
+                    bebra: User = dialog.entity
                     # logger.debug(bebra)
                     await sent_reply(client, bebra, message, True)
                     break
@@ -100,12 +106,14 @@ async def sent_reply(client, bebra, message, error_exit=False):
                 logger.critical(repr(e))
 
 
-async def match_sent_message(client, user, from_user, message, c_state=None):
+async def match_sent_message(
+    client: TelegramClient, user: User, from_user: User, message: Message
+) -> None:
     read_message = make_plain(message.message).split(" ")
     r_message = set(read_message)
     if user != from_user:
-        form_set = set(make_plain(Reply.FORM).split(" "))
-        finish_set = set(make_plain(Reply.FINISH).split(" "))
+        form_set: set = set(make_plain(Reply.FORM).split(" "))
+        finish_set: set = set(make_plain(Reply.FINISH).split(" "))
         # TODO: change state
         if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
             raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM_REPLY}")
@@ -118,25 +126,27 @@ async def match_sent_message(client, user, from_user, message, c_state=None):
     upprove = Keywords.FIRST_MESSAGE
     ignore = Keywords.IGNORE
     if r_message & upprove and not (r_message & ignore):
-        match c_state:
+        current_state = None
+        match current_state:
             case None:
                 raise ExitLoop(f"First message sent to {user.username}")
                 # TODO: send start_message to user
         # await sent_reply_start(client, user)
 
 
-async def match_messages_from(client, user, from_user):
-    user_messages = await client.get_messages(
+async def match_messages_from(
+    client: TelegramClient, user: User, from_user: User
+) -> None:
+    user_messages_list = await client.get_messages(
         entity=user,
         from_user=from_user,
         limit=3,
-        # reverse=True,
     )
-    if user_messages.total > 5:
+    if user_messages_list.total > 5:
         return
     user_messages = filter(
-        lambda x: (today - x.date.date()
-                   ).days <= Deviation.MESSAGE_AGE, user_messages
+        lambda x: (today - x.date.date()).days <= Deviation.MESSAGE_AGE,
+        user_messages_list,
     )
 
     for message in user_messages:
@@ -146,7 +156,7 @@ async def match_messages_from(client, user, from_user):
 
 
 @logger.catch
-async def check_new_messages():
+async def check_new_messages() -> None:
     await client.start()
     global myself
     myself = await client.get_me()
@@ -173,7 +183,7 @@ async def check_new_messages():
 
 
 @logger.catch
-def run_message_checker():
+def run_message_checker() -> None:
     logger.info("Begin check")
     clients = choose_clients()
     for current_client in clients:
