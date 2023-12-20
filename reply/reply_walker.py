@@ -2,9 +2,9 @@ import asyncio
 import datetime as dt
 from datetime import date
 
-from config.messages import Deviation, Keywords, Reply
+from config.messages import Deviation, Keywords, Assistant
 from loguru import logger
-from telethon.sync import TelegramClient
+# from telethon.sync import TelegramClient
 from telethon.types import Message, User
 from tools.editor import make_plain
 
@@ -43,11 +43,11 @@ async def sent_reply_start(
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
-        await client.send_message(bebra, Reply.say_hi(first_name))
+        await client.send_message(bebra, Assistant.say_hi(first_name))
 
     async with client.action(bebra, "typing"):
         await asyncio.sleep(5)
-        await client.send_message(bebra, Reply.FORM)
+        await client.send_message(bebra, Assistant.FORM)
         logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
