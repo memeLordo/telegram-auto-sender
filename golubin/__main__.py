@@ -1,0 +1,3 @@
+import golubin
+
+golubin.main()
