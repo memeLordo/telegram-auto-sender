@@ -14,8 +14,8 @@ class ExitLoop(Exception):
     pass
 
 
-tday = dt.date.today()
-# start_date = today - dt.timedelta(days=1)
+today = dt.date.today()
+max_msg_age = 14
 
 logger.add(
     "process.log",
@@ -135,8 +135,9 @@ async def match_messages_from(client, user, from_user):
     )
     if user_messages.total > 5:
         return
-    user_messages = filter(lambda x: (
-        tday - x.date.date()).days <= 14, user_messages)
+    user_messages = filter(
+        lambda x: (today - x.date.date()).days <= max_msg_age, user_messages
+    )
 
     for message in user_messages:
         if not message.message:
