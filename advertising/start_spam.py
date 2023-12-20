@@ -114,8 +114,8 @@ def main() -> None:
         count = 0
         clients_group = choose_clients()
         for current_client in clients_group:
+            global client
             with current_client as client:
-                global client
                 client.session.save_entities = False
                 client.loop.run_until_complete(start())
         logger.success(f"Total count: {count}")
