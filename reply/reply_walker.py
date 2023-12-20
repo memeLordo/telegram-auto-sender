@@ -29,16 +29,11 @@ logger.add(
 
 
 @logger.catch
-async def sent_reply_start(
-    client: TelegramClient, bebra: User, error_exit: bool = False
-) -> None:
+async def sent_reply_start(bebra: User) -> None:
     log_name: str = bebra.first_name
     first_name = bebra.first_name.split(" ")[0]
-    if not error_exit:
-        logger.info(f"{show_client(client)}: got message from {log_name}")
 
     await asyncio.sleep(1)
-
     #############
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
@@ -53,29 +48,26 @@ async def sent_reply_start(
 
 @logger.catch
 async def sent_reply(
-    client: User, bebra: User, message: Message, error_exit: bool = False
+    bebra_user: User, message: Message
 ) -> None:
-    log_name = bebra.first_name
-    sender = bebra.username
+    log_name = bebra_user.first_name
+    sender = bebra_user
     logger.info(f"{show_client(client)}: got message from {log_name}")
     await asyncio.sleep(1)
-
     await client.send_read_acknowledge(sender)
 
-    with client.action(bebra.username, "typing"):
+    with client.action(bebra_user, "typing"):
         await asyncio.sleep(4)
         await client.send_message(sender, message)
         logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
-async def match_sent_message(
-    client: TelegramClient, user: User, from_user: User, message: Message
-) -> None:
+async def match_sent_message(user: User, from_user: User, message: Message):
     read_message = make_plain(message.message).split(" ")
     r_message = set(read_message)
     if user != from_user:
-        form_set: set = set(make_plain(Reply.FORM).split(" "))
-        finish_set: set = set(make_plain(Reply.FINISH).split(" "))
+        form_set: set = set(make_plain(Assistant.FORM).split(" "))
+        finish_set: set = set(make_plain(Assistant.FINISH).split(" "))
         # TODO: change state
         if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
             raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM_REPLY}")
@@ -97,9 +89,7 @@ async def match_sent_message(
         # await sent_reply_start(client, user)
 
 
-async def match_messages_from(
-    client: TelegramClient, user: User, from_user: User
-) -> None:
+async def match_messages_from(user: User, from_user: User) -> None:
     user_messages_list = await client.get_messages(
         entity=user,
         from_user=from_user,
@@ -115,7 +105,7 @@ async def match_messages_from(
     for message in user_messages:
         if not message.message:
             continue
-        await match_sent_message(client, user, from_user, message)
+        await match_sent_message(user, from_user, message)
 
 
 @logger.catch
@@ -132,10 +122,10 @@ async def check_new_messages() -> None:
                 continue
             # logger.debug(bebra.username)
             # Проверяем статус по нашим полследним сообщениям из формы
-            await match_messages_from(client, bebra, myself)
+            await match_messages_from(bebra, myself)
 
             # Далее определяем тип по последним сообщениям пользователя
-            await match_messages_from(client, bebra, bebra)
+            await match_messages_from(bebra, bebra)
 
         except ValueError as e:
             logger.critical(e.__class__.__name__)
