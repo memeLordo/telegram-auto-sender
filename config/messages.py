@@ -98,7 +98,7 @@ class Keywords:
     )
     IGNORE = set(
         [
-            "behetly",
+            "@behetly",
             "лс",
             "копирайтинг",
             "отправлю",
