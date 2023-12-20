@@ -40,34 +40,15 @@ async def sent_reply_start(
     await asyncio.sleep(1)
 
     #############
-    try:
-        await client.send_read_acknowledge(bebra)
-        async with client.action(bebra, "typing"):
-            await asyncio.sleep(4)
-            await client.send_message(bebra, Reply.say_hi(first_name))
+    await client.send_read_acknowledge(bebra)
+    async with client.action(bebra, "typing"):
+        await asyncio.sleep(4)
+        await client.send_message(bebra, Reply.say_hi(first_name))
 
-        async with client.action(bebra, "typing"):
-            await asyncio.sleep(5)
-            await client.send_message(bebra, Reply.FORM)
-            logger.debug(f"{show_client(client)}: message sent to {log_name}")
-
-    except TypeError:
-        logger.error(f"{show_client(client)}: {log_name} is unknown")
-
-        if error_exit:
-            raise TypeError(f"{show_client(client)}: Still unresolved")
-
-        dialogs = client.iter_dialogs()
-        async for dialog in dialogs:
-            try:
-                if dialog.entity.id == bebra.id:
-                    logger.info(f"{log_name}'s ID found")
-                    bebra: User = dialog.entity
-                    # logger.debug(bebra)
-                    await sent_reply_start(client, bebra, True)
-                    break
-            except Exception as e:
-                logger.critical(repr(e))
+    async with client.action(bebra, "typing"):
+        await asyncio.sleep(5)
+        await client.send_message(bebra, Reply.FORM)
+        logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
 @logger.catch
@@ -79,30 +60,12 @@ async def sent_reply(
     logger.info(f"{show_client(client)}: got message from {log_name}")
     await asyncio.sleep(1)
 
-    try:
-        await client.send_read_acknowledge(sender)
+    await client.send_read_acknowledge(sender)
 
-        async with client.action(bebra.username, "typing"):
-            await asyncio.sleep(4)
-            await client.send_message(sender, message)
-            logger.debug(f"{show_client(client)}: message sent to {log_name}")
-    except ValueError:
-        logger.error(f"{show_client(client)}: {log_name} is unknown")
-
-        if error_exit:
-            raise ValueError(f"{show_client(client)}: Still unresolved")
-
-        dialogs = client.iter_dialogs()
-        async for dialog in dialogs:
-            try:
-                if dialog.entity.id == bebra.id:
-                    logger.info(f"{log_name}'s ID found")
-                    bebra: User = dialog.entity
-                    # logger.debug(bebra)
-                    await sent_reply(client, bebra, message, True)
-                    break
-            except Exception as e:
-                logger.critical(repr(e))
+    with client.action(bebra.username, "typing"):
+        await asyncio.sleep(4)
+        await client.send_message(sender, message)
+        logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
 async def match_sent_message(
