@@ -6,7 +6,7 @@ from loguru import logger
 from telethon.types import User
 from tools.editor import make_plain
 
-from .clients import clients, show_client
+from .clients import choose_clients, show_client
 from .tags import UserStatus
 
 
@@ -175,6 +175,7 @@ async def check_new_messages():
 @logger.catch
 def run_message_checker():
     logger.info("Begin check")
+    clients = choose_clients()
     for current_client in clients:
         global client
         with current_client as client:

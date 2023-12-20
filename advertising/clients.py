@@ -10,7 +10,7 @@ clients = [
 ]
 
 
-def choose_clients(client_list):
+def choose_clients(client_list=clients):
     key_clients = sys.argv[1: 3 + 1]
     if not key_clients:
         return client_list

@@ -109,7 +109,7 @@ async def send_message_to_channel(result, message):
 def main():
     try:
         count = 0
-        clients_group = choose_clients(clients)
+        clients_group = choose_clients()
         for current_client in clients_group:
             with current_client as client:
                 global client
