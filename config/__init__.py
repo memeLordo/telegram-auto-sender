@@ -10,12 +10,12 @@ from config.id import (
     my_api_hash,
     my_api_id,
 )
-from config.messages import Ads, Keywords, Reply
+from config.messages import Ads, Assistant, Keywords
 
 __all__ = [
     "Ads",
     "Keywords",
-    "Reply",
+    "Assistant",
     "api_hash",
     "api_hash2",
     "api_hash3",
