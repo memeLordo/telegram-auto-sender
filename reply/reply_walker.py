@@ -29,12 +29,11 @@ logger.add(
 
 
 @logger.catch
-async def sent_reply_st(
+async def sent_reply_start(
     client: TelegramClient, bebra: User, error_exit: bool = False
 ) -> None:
     log_name: str = bebra.first_name
     first_name = bebra.first_name.split(" ")[0]
-    sender: str = bebra.username
     if not error_exit:
         logger.info(f"{show_client(client)}: got message from {log_name}")
 
@@ -42,21 +41,21 @@ async def sent_reply_st(
 
     #############
     try:
-        await client.send_read_acknowledge(sender)
+        await client.send_read_acknowledge(bebra)
         async with client.action(bebra, "typing"):
             await asyncio.sleep(4)
             await client.send_message(bebra, Reply.say_hi(first_name))
 
         async with client.action(bebra, "typing"):
             await asyncio.sleep(5)
-            await client.send_message(sender, Reply.FORM)
+            await client.send_message(bebra, Reply.FORM)
             logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
-    except ValueError:
+    except TypeError:
         logger.error(f"{show_client(client)}: {log_name} is unknown")
 
         if error_exit:
-            raise ValueError(f"{show_client(client)}: Still unresolved")
+            raise TypeError(f"{show_client(client)}: Still unresolved")
 
         dialogs = client.iter_dialogs()
         async for dialog in dialogs:
@@ -65,7 +64,7 @@ async def sent_reply_st(
                     logger.info(f"{log_name}'s ID found")
                     bebra: User = dialog.entity
                     # logger.debug(bebra)
-                    await sent_reply_st(client, bebra, True)
+                    await sent_reply_start(client, bebra, True)
                     break
             except Exception as e:
                 logger.critical(repr(e))
@@ -129,6 +128,7 @@ async def match_sent_message(
         current_state = None
         match current_state:
             case None:
+                await sent_reply_start(client, user)
                 raise ExitLoop(f"First message sent to {user.username}")
                 # TODO: send start_message to user
         # await sent_reply_start(client, user)
@@ -167,7 +167,7 @@ async def check_new_messages() -> None:
             bebra = dialog.entity
             if not isinstance(bebra, User) or bebra.bot:
                 continue
-            logger.debug(bebra.username)
+            # logger.debug(bebra.username)
             # Проверяем статус по нашим полследним сообщениям из формы
             await match_messages_from(client, bebra, myself)
 
