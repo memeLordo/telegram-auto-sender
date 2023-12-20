@@ -108,7 +108,7 @@ async def match_sent_message(client, user, from_user, message, c_state=None):
         finish_set = set(make_plain(Reply.FINISH).split(" "))
         # TODO: change state
         if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
-            raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
+            raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM_REPLY}")
         if len(finish_set & r_message) / len(finish_set) >= Deviation.FINISH:
             raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
         return

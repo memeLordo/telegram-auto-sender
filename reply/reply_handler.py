@@ -65,9 +65,9 @@ async def run_handler(event):
                         await asyncio.sleep(6)
                         await event.respond(Reply.FORM)
                     # TODO: change status to function
-                    state_database[who] = UserStatus.WAIT_FORM
+                    state_database[who] = UserStatus.WAIT_FORM_REPLY
 
-                case UserStatus.WAIT_FORM:
+                case UserStatus.WAIT_FORM_REPLY:
                     if check_key_word(event, state_):
                         await asyncio.sleep(1)
                         await event.mark_read()
@@ -79,7 +79,7 @@ async def run_handler(event):
                 # case UserStatus.TROUBLE_REPLY:
                 #     await event.mark_read()
                 #     await event.respond("Пожалуйста, сообщите, когда....")
-                #     state_database[who] = UserStatus.WAIT_FORM
+                #     state_database[who] = UserStatus.WAIT_FORM_REPLY
 
                 case UserStatus.DONE:
                     # await event.respond("Всё кончено.")
