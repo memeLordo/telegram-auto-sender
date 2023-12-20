@@ -1,7 +1,7 @@
 import asyncio
 import datetime as dt
 
-from config.messages import Keywords, Reply
+from config.messages import Deviation, Keywords, Reply
 from loguru import logger
 from telethon.types import User
 from tools.editor import make_plain
@@ -15,7 +15,6 @@ class ExitLoop(Exception):
 
 
 today = dt.date.today()
-max_msg_age = 14
 
 logger.add(
     "process.log",
@@ -108,9 +107,9 @@ async def match_sent_message(client, user, from_user, message, c_state=None):
         form_set = set(make_plain(Reply.FORM).split(" "))
         finish_set = set(make_plain(Reply.FINISH).split(" "))
         # TODO: change state
-        if len(form_set & r_message) / len(form_set) >= 0.7:
+        if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
             raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM}")
-        if len(finish_set & r_message) / len(finish_set) == 1:
+        if len(finish_set & r_message) / len(finish_set) >= Deviation.FINISH:
             raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
         return
 
@@ -136,7 +135,8 @@ async def match_messages_from(client, user, from_user):
     if user_messages.total > 5:
         return
     user_messages = filter(
-        lambda x: (today - x.date.date()).days <= max_msg_age, user_messages
+        lambda x: (today - x.date.date()
+                   ).days <= Deviation.MESSAGE_AGE, user_messages
     )
 
     for message in user_messages:
