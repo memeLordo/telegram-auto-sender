@@ -1,3 +1,5 @@
+import sys
+
 import config
 from telethon import TelegramClient
 
@@ -6,6 +8,13 @@ client2 = TelegramClient("reply2", config.api_id2, config.api_hash2)
 client3 = TelegramClient("reply3", config.api_id2, config.api_hash2)
 
 clients = [client1, client2, client3]
+
+
+def choose_clients(client_list=clients):
+    key_clients = sys.argv[1: 3 + 1]
+    if not key_clients:
+        return client_list
+    return list(client_list[int(x) - 1] for x in key_clients)
 
 
 def add_count(client):
