@@ -1,9 +1,10 @@
 import re
 import string
+from typing import List, Pattern, Text
 
 
-def remove_emoji(string):
-    emoji_pattern = re.compile(
+def remove_emoji(text: Text) -> str:
+    emoji_pattern: Pattern[Text] = re.compile(
         "["
         "\U0001F600-\U0001F64F"  # emoticons
         "\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -26,12 +27,12 @@ def remove_emoji(string):
         "]+",
         flags=re.UNICODE,
     )
-    return emoji_pattern.sub(r"", string)
+    return emoji_pattern.sub(r"", text)
 
 
-def remove_punct(text):
-    def ignore_chars(text, chars_to_ignose=["+", "@"]):
-        for char in chars_to_ignose:
+def remove_punct(text: Text) -> str:
+    def ignore_chars(text: Text, ignose_list: List[str] = ["+", "@"]) -> str:
+        for char in ignose_list:
             text = text.replace(char, "")
         return text
 
@@ -43,5 +44,5 @@ def remove_punct(text):
     return result
 
 
-def make_plain(text):
+def make_plain(text: str) -> str:
     return remove_punct(" ".join(str(text).lower().splitlines()))

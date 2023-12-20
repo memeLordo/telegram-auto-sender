@@ -5,6 +5,7 @@ from config.messages import Keywords, Reply
 
 from loguru import logger
 from telethon import events
+from telethon.types import Event, User
 from tools.editor import remove_punct
 
 from .clients import client1, client2, client3
@@ -19,14 +20,14 @@ state_database = {}
 type_database = {}
 
 
-def define_type_by_message(event):
+def define_type_by_message(event: Event) -> UserType:
     message_set = set(remove_punct(event.text).lower().split(" "))
     logger.trace(message_set)
     if message_set & Keywords.FIRST_MESSAGE:
         return UserType.ASSISTANT
 
 
-def check_key_word(event, state):
+def check_key_word(event: Event, state: UserStatus) -> bool:
     message_set = set(remove_punct(event.text).lower().split(" "))
 
     if message_set & Keywords.FORM:
@@ -37,11 +38,11 @@ def check_key_word(event, state):
 ####################################################
 
 
-async def run_handler(event):
-    who = event.sender_id
-    sender = await event.get_sender()
-    type_ = type_database.get(who)
-    state_ = state_database.get(who)
+async def run_handler(event: Event) -> None:
+    who: int = event.sender_id
+    sender: User = await event.get_sender()
+    type_: dict = type_database.get(who)
+    state_: dict = state_database.get(who)
     logger.trace(f"Type is {type_}")
 
     match type_:
@@ -99,7 +100,7 @@ async def run_handler(event):
 # @client1.on(events.NewMessage(func=lambda e: e.is_private))
 # @client2.on(events.NewMessage(func=lambda e: e.is_private))
 @client3.on(events.NewMessage(func=lambda e: e.is_private))
-async def handler(event):
+async def handler(event: Event) -> None:
     # sender = await event.get_sender()
     # print(event)
     await run_handler(event)
@@ -109,7 +110,7 @@ async def handler(event):
 
 
 @logger.catch
-def start_event_handler():
+def start_event_handler() -> None:
     logger.info("Begin loop")
     loop = asyncio.get_event_loop()
     client1.start()
