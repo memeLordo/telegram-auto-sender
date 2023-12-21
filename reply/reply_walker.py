@@ -7,6 +7,7 @@ from loguru import logger
 # from telethon.sync import TelegramClient
 from telethon.types import Message, User
 from tools.editor import make_plain
+from tools.checker import is_user
 
 from .clients import choose_clients, show_client
 from .tags import UserStatus
@@ -118,7 +119,7 @@ async def check_new_messages() -> None:
     async for dialog in dialogs:
         try:
             bebra = dialog.entity
-            if not isinstance(bebra, User) or bebra.bot:
+            if not is_user(bebra):
                 continue
             # logger.debug(bebra.username)
             # Проверяем статус по нашим полследним сообщениям из формы
