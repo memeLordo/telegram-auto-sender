@@ -7,11 +7,13 @@ from tools.checker import is_user
 from tools.editor import make_plain
 
 from .clients import client1, client2, client3, show_client
+from .errors import form_error_list
 
 
 async def make_user_list():
     golubin = await find_golubin()
     user_list = []
+    error_list = []
     async for message in client.iter_messages(entity=golubin):
         try:
             text_set = set(make_plain(message.message).split(" "))
@@ -21,14 +23,9 @@ async def make_user_list():
                 logger.info(usernames)
                 for username in usernames:
                     try:
-                        user = await client.get_entity(username)
-                        if not is_user(user):
+                        first_name = await find_user_name(username)
+                        if not first_name:
                             continue
-                        history = await user.get_messages(user)
-                        await asyncio.sleep(2)
-                        if history:
-                            continue
-                        first_name = user.first_name.split(" ")[0]
                         user_list.append((username, first_name))
                     except Exception:
                         continue
