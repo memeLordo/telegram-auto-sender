@@ -3,9 +3,9 @@ from datetime import date, datetime
 from typing import List
 
 from loguru import logger
-from telethon import types
 from telethon.types import User
 
+from .checker import is_user
 from .clients import clients, show_client
 
 logger.remove()
@@ -23,7 +23,7 @@ async def start() -> None:
 
 async def exclude_users() -> List[User]:
     dialogs = await client.get_dialogs(archived=False)
-    users = list(filter(lambda x: isinstance(x.entity, types.User), dialogs))
+    users = list(filter(lambda x: is_user(x.entity), dialogs))
     logger.info(f"Exclude users succses! {len(users)}")
     return users
 
