@@ -45,6 +45,18 @@ async def make_user_list():
             logger.error(repr(e))
 
 
+async def find_user_name(username):
+    user = await client.get_entity(username)
+    if not is_user(user):
+        return
+    history = await client.get_messages(entity=user)
+    history2 = await client3.get_messages(entity=user)
+    await asyncio.sleep(3)
+    if history or history2:
+        return
+    return user.first_name.split(" ")[0]
+
+
 def divide_names(names_list):
     k, _ = divmod(len(names_list), 2)
     return names_list[:k], names_list[k:]
@@ -66,10 +78,8 @@ async def find_golubin():
 async def send_messages_in_list(range_list):
     for username, name in range_list:
         bebra = await client.get_entity(username)
-        print(bebra)
-        # await asyncio.sleep(60)
-        # await client.send_message(bebra, Lead.say_hi(name))
-        # print(func(first_name))
+        await asyncio.sleep(60)
+        await client.send_message(bebra, Lead.say_hi(name))
         logger.debug(f"{show_client(client)}:message sent to {username}")
     await client.disconnect()
 
@@ -77,6 +87,8 @@ async def send_messages_in_list(range_list):
 @logger.catch
 def main() -> None:
     try:
+        client2.start()
+        client3.start()
         global client
         with client1 as client:
             client.session.save_entities = False

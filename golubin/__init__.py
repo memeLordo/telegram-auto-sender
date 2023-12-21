@@ -1,5 +1,9 @@
 from golubin import clients, golubin
 
-from golubin.golubin import main, start
+from golubin.golubin import main
 
-__all__ = ["clients", "golubin", "main", "start"]
+__all__ = [
+    "clients",
+    "golubin",
+    "main",
+]
