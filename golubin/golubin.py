@@ -1,8 +1,9 @@
 import asyncio
 
-# from config.messages import Lead
-from loguru import logger
 # from telethon.types import User
+from config.messages import Lead
+from loguru import logger
+from telethon import errors
 from tools.checker import is_user
 from tools.editor import make_plain
 
@@ -27,12 +28,21 @@ async def make_user_list():
                         if not first_name:
                             continue
                         user_list.append((username, first_name))
-                    except Exception:
+                    except errors.FloodWaitError as e:
+                        global err_sec
+                        err_sec = e.seconds
+                        error_list.append((username, Lead.say_hi("ИМЯ")))
                         continue
+                    except Exception as e:
+                        logger.error(repr(e))
+                        continue
+            if len(error_list) >= 50:
+                form_error_list(error_list, err_sec)
+                return list()
             if len(user_list) >= 50:
                 return user_list
         except Exception as e:
-            logger.critical(repr(e))
+            logger.error(repr(e))
 
 
 def divide_names(names_list):
