@@ -13,7 +13,7 @@ from .errors import form_error_list
 
 async def make_user_list():
     golubin = await find_golubin()
-    user_list = []
+    user_set = set()
     error_list = []
     async for message in client.iter_messages(entity=golubin):
         try:
@@ -27,7 +27,7 @@ async def make_user_list():
                         first_name = await find_user_name(username)
                         if not first_name:
                             continue
-                        user_list.append((username, first_name))
+                        user_set.add((username, first_name))
                     except errors.FloodWaitError as e:
                         global err_sec
                         err_sec = e.seconds
@@ -39,8 +39,8 @@ async def make_user_list():
             if len(error_list) >= 50:
                 form_error_list(error_list, err_sec)
                 return list()
-            if len(user_list) >= 50:
-                return user_list
+            if len(user_set) >= 50:
+                return list(user_set)
         except Exception as e:
             logger.error(repr(e))
 
