@@ -21,9 +21,10 @@ async def make_user_list():
             # logger.info(text_set)
             usernames = {wrd[1:] for wrd in text_set if wrd and wrd[0] == "@"}
             if usernames:
-                logger.info(usernames)
+                logger.opt(colors=True).debug(f"<white>{usernames}</white>")
                 for username in usernames:
                     try:
+                        # logger.debug(username)
                         first_name = await find_user_name(username)
                         if not first_name:
                             continue
@@ -61,6 +62,7 @@ async def find_user_name(username):
     history2 = await client3.get_messages(entity=user2)
     await asyncio.sleep(3)
     if history or history2:
+        logger.warning(f"{username}'s history is present.")
         return
     return user.first_name.split(" ")[0]
 
