@@ -1,4 +1,7 @@
-def convert_to_string_format(input_file_path):
+from typing import AnyStr
+
+
+def convert_to_string_format(input_file_path: AnyStr) -> None:
     try:
         # Чтение содержимого файла
         with open(input_file_path, "r", encoding="utf-8") as file:
