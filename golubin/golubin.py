@@ -46,11 +46,19 @@ async def make_user_list():
 
 
 async def find_user_name(username):
-    user = await client.get_entity(username)
+    try:
+        user = await client2.get_entity(username)
+        user2 = await client3.get_entity(username)
+    except errors.rpcerrorlist.UsernameNotOccupiedError:
+        return
+    except ValueError:
+        return
+    except errors.rpcerrorlist.UsernameInvalidError:
+        return
     if not is_user(user):
         return
-    history = await client.get_messages(entity=user)
-    history2 = await client3.get_messages(entity=user)
+    history = await client2.get_messages(entity=user)
+    history2 = await client3.get_messages(entity=user2)
     await asyncio.sleep(3)
     if history or history2:
         return
@@ -76,12 +84,17 @@ async def find_golubin():
 
 
 async def send_messages_in_list(range_list):
-    for username, name in range_list:
-        bebra = await client.get_entity(username)
-        await asyncio.sleep(60)
-        await client.send_message(bebra, Lead.say_hi(name))
-        logger.debug(f"{show_client(client)}:message sent to {username}")
-    await client.disconnect()
+    await asyncio.sleep(10)
+    try:
+        for username, name in range_list:
+            bebra = await client.get_entity(username)
+            await asyncio.sleep(5)
+            await client.send_message(bebra, Lead.say_hi(name))
+            logger.debug(f"{show_client(client)}:message sent to {username}")
+    except errors.rpcerrorlist.PeerFloodError as e:
+        logger.critical(repr(e))
+    finally:
+        await client.disconnect()
 
 
 @logger.catch
