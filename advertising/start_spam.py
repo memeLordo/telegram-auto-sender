@@ -1,6 +1,6 @@
 # import json
 import asyncio
-from typing import Any, List
+from typing import Any, List, Set
 
 from config.messages import Ads, Keywords
 
@@ -33,7 +33,7 @@ async def start() -> None:
 
 
 # @logger.catch
-async def send_to_channels(req: Any, dirs: List[str] = Keywords.SEARCHED_DIRS):
+async def send_to_channels(req: Any, dirs: Set[str] = Keywords.SEARCHED_DIRS):
     for dialog_filter in req:
         result = dialog_filter.to_dict()
         try:
