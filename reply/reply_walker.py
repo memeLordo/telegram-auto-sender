@@ -39,7 +39,7 @@ async def sent_reply_start(bebra: User) -> None:
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
-        await client.send_message(bebra, Assistant.FORM)
+        await client.send_message(bebra, Assistant.form(first_name))
         logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
@@ -65,8 +65,8 @@ async def match_sent_message(user: User, from_user: User, message: Message):
     ignore: str = Keywords.IGNORE
 
     if user != from_user:
-        form_set: set = set(make_plain(Assistant.FORM).split(" "))
-        finish_set: set = set(make_plain(Assistant.FINISH).split(" "))
+        form_set = set(make_plain(Assistant.form()).split(" "))
+        finish_set = set(make_plain(Assistant.FINISH).split(" "))
         # TODO: change state
         if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
             raise ExitLoop(f"{username} = {UserStatus.WAIT_FORM_REPLY}")

@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-from config.messages import Keywords, Assistant
+from config.messages import Assistant, Keywords
 
 from loguru import logger
 from telethon import events
@@ -62,9 +62,7 @@ async def run_handler(event: Event) -> None:
                     await event.mark_read()
                     async with event.client.action(sender, "typing"):
                         await asyncio.sleep(4)
-                        await event.respond(Assistant.say_hi(sender_name))
-                        await asyncio.sleep(6)
-                        await event.respond(Assistant.FORM)
+                        await event.respond(Assistant.form(sender_name))
                     # TODO: change status to function
                     state_database[who] = UserStatus.WAIT_FORM_REPLY
 
