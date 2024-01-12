@@ -45,10 +45,13 @@ async def count_users() -> None:
         await client.loop.create_task(bebra_wrapper(bebra.entity, msg_data))
 
     for _date in todate:
-        input_date = datetime.strptime(_date, "%d.%m.%y").date()
-        count[_date] += len(
-            list(filter(lambda x: x[0].date.date() == input_date, msg_data))
-        )
+        try:
+            inpt_date = datetime.strptime(_date, "%d.%m.%y").date()
+            count[_date] += len(
+                list(filter(lambda x: x[0].date.date() == inpt_date, msg_data))
+            )
+        except ValueError:
+            continue
 
 
 def choose_date() -> date:

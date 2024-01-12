@@ -1,7 +1,6 @@
-from tools import convert_text, date_by_count, editor
+from tools import convert_text, editor
 
 __all__ = [
     "convert_text",
-    "date_by_count",
     "editor",
 ]
