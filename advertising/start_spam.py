@@ -111,6 +111,7 @@ async def send_message_to_channel(result: dict, message: str) -> None:
 @logger.catch
 def main() -> None:
     try:
+        global count
         count = 0
         clients_group = choose_clients()
         for current_client in clients_group:
