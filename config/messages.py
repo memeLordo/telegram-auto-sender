@@ -1,5 +1,6 @@
 from typing import Optional
 
+from .from_text import read_add_message
 
 class Ads:
     FREE_ASSIST = (
@@ -83,6 +84,7 @@ class Ads:
         "\n"
         'Заинтересовала вакансия, пиши "операционка" в ЛС\n'
     )
+    __SCRIPT = read_add_message()
 
 
 class Keywords:
