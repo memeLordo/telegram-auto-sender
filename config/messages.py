@@ -72,7 +72,7 @@ class Assistant:
 
 class Lead:
 
-    def say_hi(name: Optional[str] = None) -> str:
+    def say_hi(name: str | None = None) -> str:
         name = "" if name is None else f", {name}"
 
         return (
