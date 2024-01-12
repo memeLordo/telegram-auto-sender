@@ -2,7 +2,7 @@ import advertising.start_spam as start_spam
 from loguru import logger
 
 logger.add(
-    "ads_main.log",
+    "advertising/ads_main.log",
     format="{time:DD-MM-YYYY at HH:mm:ss} | {level} | {message}",
     level="INFO",
     rotation="10 MB",
