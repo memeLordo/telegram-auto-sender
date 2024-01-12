@@ -95,7 +95,7 @@ async def send_message_to_channel(result: dict, message: str) -> None:
             logger.warning(f"Private: {my_channel.title}")
             # logger.info(repr(e))
         except ValueError:
-            logger.error("Value error!")
+            logger.error(f"Value error: {channels_id}")
             dialogs = client.iter_dialogs()
             async for dialog in dialogs:
                 try:
