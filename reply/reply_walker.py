@@ -2,12 +2,12 @@ import asyncio
 import datetime as dt
 from datetime import date
 
-from config.messages import Deviation, Keywords, Assistant
+from config.messages import Assistant, Deviation, Keywords
 from loguru import logger
 # from telethon.sync import TelegramClient
 from telethon.types import Message, User
-from tools.editor import make_plain
 from tools.checker import is_user
+from tools.editor import make_plain, remove_punct
 
 from .clients import choose_clients, show_client
 from .tags import UserStatus
@@ -32,31 +32,25 @@ logger.add(
 @logger.catch
 async def sent_reply_start(bebra: User) -> None:
     log_name: str = bebra.first_name
-    first_name = bebra.first_name.split(" ")[0]
+    first_name = remove_punct(bebra.first_name.split(" ")[0])
 
     await asyncio.sleep(1)
     #############
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
-        await client.send_message(bebra, Assistant.say_hi(first_name))
-
-    async with client.action(bebra, "typing"):
-        await asyncio.sleep(5)
         await client.send_message(bebra, Assistant.FORM)
         logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
 @logger.catch
-async def sent_reply(
-    bebra_user: User, message: Message
-) -> None:
+async def sent_reply(bebra_user: User, message: Message) -> None:
     log_name = bebra_user.first_name
     sender = bebra_user
     logger.info(f"{show_client(client)}: got message from {log_name}")
+
     await asyncio.sleep(1)
     await client.send_read_acknowledge(sender)
-
     with client.action(bebra_user, "typing"):
         await asyncio.sleep(4)
         await client.send_message(sender, message)
@@ -64,28 +58,30 @@ async def sent_reply(
 
 
 async def match_sent_message(user: User, from_user: User, message: Message):
-    read_message = make_plain(message.message).split(" ")
+    read_message: list[str] = make_plain(message.message).split(" ")
     r_message = set(read_message)
+    username: str = user.username
+    upprove: str = Keywords.FIRST_MESSAGE
+    ignore: str = Keywords.IGNORE
+
     if user != from_user:
         form_set: set = set(make_plain(Assistant.FORM).split(" "))
         finish_set: set = set(make_plain(Assistant.FINISH).split(" "))
         # TODO: change state
         if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
-            raise ExitLoop(f"{user.username} = {UserStatus.WAIT_FORM_REPLY}")
+            raise ExitLoop(f"{username} = {UserStatus.WAIT_FORM_REPLY}")
         if len(finish_set & r_message) / len(finish_set) >= Deviation.FINISH:
-            raise ExitLoop(f"{user.username} = {UserStatus.DONE}")
+            raise ExitLoop(f"{username} = {UserStatus.DONE}")
         return
 
-    logger.opt(colors=True).debug(
-        f"<white>{read_message}</white> : {user.username}")
-    upprove = Keywords.FIRST_MESSAGE
-    ignore = Keywords.IGNORE
+    logger.opt(colors=True).debug(f"<white>{read_message}</white>:{username}")
+
     if r_message & upprove and not (r_message & ignore):
         current_state = None
         match current_state:
             case None:
-                await sent_reply_start(client, user)
-                raise ExitLoop(f"First message sent to {user.username}")
+                await sent_reply_start(user)
+                raise ExitLoop(f"First message sent to {username}")
                 # TODO: send start_message to user
         # await sent_reply_start(client, user)
 
@@ -127,7 +123,7 @@ async def check_new_messages() -> None:
 
             # Далее определяем тип по последним сообщениям пользователя
             await match_messages_from(bebra, bebra)
-
+            print(bebra.username)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
         except ExitLoop as e:
