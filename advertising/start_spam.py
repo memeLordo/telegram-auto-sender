@@ -5,8 +5,7 @@ from typing import Any, List, Set
 from config.messages import Ads, Keywords
 
 from loguru import logger
-from telethon import errors, functions
-from telethon.tl import types
+from telethon import errors, functions, types
 from telethon.types import Channel
 
 from .clients import choose_clients, clients
@@ -38,27 +37,20 @@ async def send_to_channels(req: Any, dirs: Set[str] = Keywords.SEARCHED_DIRS):
         result = dialog_filter.to_dict()
         try:
             title: List[str] = result["title"]
-
             if title in dirs:
                 logger.info("Current dir: " + result["title"])
-                #
                 await asyncio.sleep(1)
-
                 match title:
                     case "Free assist":
                         await send_message_to_channel(result, Ads.FREE_ASSIST)
                         await asyncio.sleep(3)
-
                     case "Новые FA":
                         await send_message_to_channel(result, Ads.NEW_FA)
                         await asyncio.sleep(3)
-
                     # case 'КазаньSMS':
                     #     await send_message_to_channel(result, ad_kazan)
                     #     await asyncio.sleep(3)
-
                 logger.success("Sent!")
-
         except KeyError:
             pass
 
@@ -74,11 +66,10 @@ async def send_message_to_channel(result: dict, message: str) -> None:
 
             async with client.action(my_channel, "typing"):
                 await asyncio.sleep(1)
-                await client.send_message(my_channel, message=message)
+                await client.send_message(my_channel, message)
             global count
             count += 1
             logger.debug(my_channel.title)
-
         except KeyError:
             continue
         except errors.rpcerrorlist.SlowModeWaitError:
@@ -96,16 +87,13 @@ async def send_message_to_channel(result: dict, message: str) -> None:
             # logger.info(repr(e))
         except ValueError:
             logger.error(f"Value error: {channels_id}")
-            dialogs = client.iter_dialogs()
-            async for dialog in dialogs:
-                try:
-                    if dialog.entity.id == channels_id:
-                        logger.info("Channel's ID found")
-                        my_channel: Channel = dialog.entity
-                        await client.send_message(my_channel, message=message)
-                        break
-                except ValueError:
-                    continue
+            await client.get_dialogs()
+            try:
+                my_channel: Any = await client.get_entity(channels_id)
+                logger.info("Channel's ID found")
+                await client.send_message(my_channel, message)
+            except ValueError:
+                continue
 
 
 @logger.catch
