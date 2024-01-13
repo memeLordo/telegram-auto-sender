@@ -4,7 +4,6 @@ from datetime import date
 
 from config.messages import Assistant, Deviation, Keywords
 from loguru import logger
-# from telethon.sync import TelegramClient
 from telethon.types import Message, User
 from tools.checker import is_user
 from tools.editor import make_plain, remove_punct
@@ -30,35 +29,19 @@ logger.add(
 
 
 @logger.catch
-async def sent_reply_start(bebra: User) -> None:
+async def sent_reply(bebra: User, message: str | Message) -> None:
     log_name: str = bebra.first_name
-    first_name = remove_punct(bebra.first_name.split(" ")[0])
 
     await asyncio.sleep(1)
-    #############
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
-        await client.send_message(bebra, Assistant.form(first_name))
-        logger.debug(f"{show_client(client)}: message sent to {log_name}")
-
-
-@logger.catch
-async def sent_reply(bebra_user: User, message: Message) -> None:
-    log_name = bebra_user.first_name
-    sender = bebra_user
-    logger.info(f"{show_client(client)}: got message from {log_name}")
-
-    await asyncio.sleep(1)
-    await client.send_read_acknowledge(sender)
-    with client.action(bebra_user, "typing"):
-        await asyncio.sleep(4)
-        await client.send_message(sender, message)
+        await client.send_message(bebra, message)
         logger.debug(f"{show_client(client)}: message sent to {log_name}")
 
 
 async def match_sent_message(user: User, from_user: User, message: Message):
-    read_message: list[str] = make_plain(message.message).split(" ")
+    read_message: tuple[str] = tuple(make_plain(message.message).split(" "))
     r_message = set(read_message)
     username: str = user.username
     upprove: str = Keywords.FIRST_MESSAGE
@@ -80,7 +63,8 @@ async def match_sent_message(user: User, from_user: User, message: Message):
         current_state = None
         match current_state:
             case None:
-                await sent_reply_start(user)
+                first_name = remove_punct(user.first_name.split(" ")[0])
+                await sent_reply(user, Assistant.form(first_name))
                 raise ExitLoop(f"First message sent to {username}")
                 # TODO: send start_message to user
         # await sent_reply_start(client, user)
