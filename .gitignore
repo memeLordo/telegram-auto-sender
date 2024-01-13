@@ -1,4 +1,7 @@
 *.session*
 *.log
 *.txt
-exclude_data.json
+*.json
+test.py
+__pycache__
+new_year

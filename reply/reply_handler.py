@@ -1,76 +1,37 @@
 import asyncio
-import string
 import sys
-from enum import Enum
+
+from config.messages import Assistant, Keywords
 
 from loguru import logger
-from messages_config import Keywords, Reply
-from reply_walker import client1, client2, client3
 from telethon import events
+from telethon.events.common import EventBuilder
+from telethon.types import User
+from tools.editor import remove_punct
+
+from .clients import client1, client2, client3
+from .tags import UserStatus, UserType
 
 
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
-####################################################
 
-
-def add_count(client):
-    if client == client1:
-        pass
-    if client == client2:
-        pass
-    if client == client3:
-        pass
-
-
-####################################################
-
-
-class UserStatus(Enum):
-    WAIT_FIRST_MESSAGE = "WAIT_FIRST_MESSAGE"
-    WAIT_FORM = "WAIT_FORM"
-    # TROUBLE_FORM = "TROUBLE_FORM"
-    DONE = "DONE"
-
-
-class UserType(Enum):
-    LEAD = "Lead"
-    ASSISTANT = "Assistant"
-    OTHER = "Other"
-
-
-####################################################
 state_database = {}
 type_database = {}
 
 
-def remove_punct(text):
-    result = text.translate(
-        str.maketrans("", "", (string.punctuation).replace("+", ""))
-    )
-    return result
-
-
-def define_type_by_message(event):
+def define_type_by_message(event: EventBuilder) -> UserType:
     message_set = set(remove_punct(event.text).lower().split(" "))
     logger.trace(message_set)
-    if message_set & set(Keywords.FIRST_MESSAGE):
+    if message_set & Keywords.FIRST_MESSAGE:
         return UserType.ASSISTANT
 
 
-def check_key_word(event, state):
+def check_key_word(event: EventBuilder, state: UserStatus) -> bool:
     message_set = set(remove_punct(event.text).lower().split(" "))
-    match state:
-        case UserStatus.WAIT_FORM:
-            keywords = set(Keywords.FORM)
 
-            # case UserStatus.TROUBLE_FORM:
-            #     keywords = set(Keywords.TROUBLE + Keywords.FORM)
-            # await event.respond("Всё кончено.")
-            # state_database[who] = UserStatus.FINISH
-            pass
-    if message_set & keywords:
+    if message_set & Keywords.FORM:
         return True
     return False
 
@@ -78,16 +39,16 @@ def check_key_word(event, state):
 ####################################################
 
 
-async def run_handler(event):
-    who = event.sender_id
-    sender = await event.get_sender()
-    sender_name = sender.first_name.split(" ")[0]
-    type_ = type_database.get(who)
-    state_ = state_database.get(who)
+async def run_handler(event: EventBuilder) -> None:
+    who: int = event.sender_id
+    sender: User = await event.get_sender()
+    type_: dict = type_database.get(who)
+    state_: dict = state_database.get(who)
     logger.trace(f"Type is {type_}")
 
     match type_:
         case None:
+            # TODO: set type function
             type_database[who] = define_type_by_message(event)
             if type_database[who] == UserType.ASSISTANT:
                 state_database[who] = UserStatus.WAIT_FIRST_MESSAGE
@@ -97,27 +58,28 @@ async def run_handler(event):
         case UserType.ASSISTANT:
             match state_:
                 case UserStatus.WAIT_FIRST_MESSAGE:
+                    sender_name = sender.first_name.split(" ")[0]
                     await asyncio.sleep(1)
                     await event.mark_read()
                     async with event.client.action(sender, "typing"):
                         await asyncio.sleep(4)
-                        await event.respond(Reply.say_hi(sender_name))
-                        await asyncio.sleep(6)
-                        await event.respond(Reply.FORM)
-                    state_database[who] = UserStatus.WAIT_FORM
+                        await event.respond(Assistant.form(sender_name))
+                    # TODO: change status to function
+                    state_database[who] = UserStatus.WAIT_FORM_REPLY
 
-                case UserStatus.WAIT_FORM:
+                case UserStatus.WAIT_FORM_REPLY:
                     if check_key_word(event, state_):
                         await asyncio.sleep(1)
                         await event.mark_read()
                         async with event.client.action(sender, "typing"):
                             await asyncio.sleep(4)
-                            await event.respond(Reply.FINISH)
+                            await event.respond(Assistant.FINISH)
+                        # TODO: change status to function
                         state_database[who] = UserStatus.DONE
                 # case UserStatus.TROUBLE_REPLY:
                 #     await event.mark_read()
                 #     await event.respond("Пожалуйста, сообщите, когда....")
-                #     state_database[who] = UserStatus.WAIT_FORM
+                #     state_database[who] = UserStatus.WAIT_FORM_REPLY
 
                 case UserStatus.DONE:
                     # await event.respond("Всё кончено.")
@@ -126,6 +88,7 @@ async def run_handler(event):
                 case _:
                     # TODO: отправить сообщение мне с этого аккаунта.
                     pass
+            # TODO: return status function
             logger.info(state_database[who])
 
         case UserType.LEAD:
@@ -136,7 +99,7 @@ async def run_handler(event):
 # @client1.on(events.NewMessage(func=lambda e: e.is_private))
 # @client2.on(events.NewMessage(func=lambda e: e.is_private))
 @client3.on(events.NewMessage(func=lambda e: e.is_private))
-async def handler(event):
+async def handler(event: EventBuilder) -> None:
     # sender = await event.get_sender()
     # print(event)
     await run_handler(event)
@@ -146,7 +109,7 @@ async def handler(event):
 
 
 @logger.catch
-def start_event_handler():
+def start_event_handler() -> None:
     logger.info("Begin loop")
     loop = asyncio.get_event_loop()
     client1.start()
