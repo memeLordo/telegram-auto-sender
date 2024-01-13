@@ -5,7 +5,8 @@ from config.messages import Assistant, Keywords
 
 from loguru import logger
 from telethon import events
-from telethon.types import Event, User
+from telethon.events.common import EventBuilder
+from telethon.types import User
 from tools.editor import remove_punct
 
 from .clients import client1, client2, client3
@@ -20,14 +21,14 @@ state_database = {}
 type_database = {}
 
 
-def define_type_by_message(event: Event) -> UserType:
+def define_type_by_message(event: EventBuilder) -> UserType:
     message_set = set(remove_punct(event.text).lower().split(" "))
     logger.trace(message_set)
     if message_set & Keywords.FIRST_MESSAGE:
         return UserType.ASSISTANT
 
 
-def check_key_word(event: Event, state: UserStatus) -> bool:
+def check_key_word(event: EventBuilder, state: UserStatus) -> bool:
     message_set = set(remove_punct(event.text).lower().split(" "))
 
     if message_set & Keywords.FORM:
@@ -38,7 +39,7 @@ def check_key_word(event: Event, state: UserStatus) -> bool:
 ####################################################
 
 
-async def run_handler(event: Event) -> None:
+async def run_handler(event: EventBuilder) -> None:
     who: int = event.sender_id
     sender: User = await event.get_sender()
     type_: dict = type_database.get(who)
@@ -98,7 +99,7 @@ async def run_handler(event: Event) -> None:
 # @client1.on(events.NewMessage(func=lambda e: e.is_private))
 # @client2.on(events.NewMessage(func=lambda e: e.is_private))
 @client3.on(events.NewMessage(func=lambda e: e.is_private))
-async def handler(event: Event) -> None:
+async def handler(event: EventBuilder) -> None:
     # sender = await event.get_sender()
     # print(event)
     await run_handler(event)
