@@ -94,9 +94,13 @@ async def check_new_messages() -> None:
     await client.start()
     global myself
     myself = await client.get_me()
-    dialogs = client.iter_dialogs()
-
-    async for dialog in dialogs:
+    dialogs = await client.get_dialogs(ignore_pinned=True)
+    filtered_dialogs = filter(
+        lambda x: x.date is None
+        or (today - x.date.date()).days <= Deviation.DIALOG_AGE,
+        dialogs,
+    )
+    for dialog in filtered_dialogs:
         try:
             bebra = dialog.entity
             if not is_user(bebra):
@@ -104,10 +108,8 @@ async def check_new_messages() -> None:
             # logger.debug(bebra.username)
             # Проверяем статус по нашим полследним сообщениям из формы
             await match_messages_from(bebra, myself)
-
             # Далее определяем тип по последним сообщениям пользователя
             await match_messages_from(bebra, bebra)
-            print(bebra.username)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
         except ExitLoop as e:
