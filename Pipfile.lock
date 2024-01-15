@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "76c33aea7765489add782f7a569b66d0b14a8cb3c13cde165b7bce524fdc42aa"
+            "sha256": "b7da2e58df4cd56a60f0634b445a23403b3c42d2f835a5562e5cc85e6fa8ac5b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -50,11 +50,11 @@
         },
         "telethon": {
             "hashes": [
-                "sha256:9e515bac70fc5bc58cbace0e193a42bb42511f16bb7a319707f860476e8ce164"
+                "sha256:377107d77fd95f8c2bd7fce77f9d78da84c1ff58023f59e8d06035a4548bd36b"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.5'",
-            "version": "==1.33.0"
+            "version": "==1.33.1"
         }
     },
     "develop": {}
