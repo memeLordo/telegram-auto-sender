@@ -113,7 +113,7 @@ async def check_new_messages() -> None:
         except ValueError as e:
             logger.critical(e.__class__.__name__)
         except ExitLoop as e:
-            logger.success(repr(e))
+            logger.opt(colors=True).debug(f"<green>{e}</green>")
             # print(dialog.name)
     logger.debug(show_client(client))
 
