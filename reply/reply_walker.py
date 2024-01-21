@@ -101,6 +101,7 @@ def update_status_by(message: str, prev_status: UserStatus):
                 if message_ & Keywords.FORM:
                     return UserStatus.DONE
             case UserStatus.DONE:
+                raise ExitLoop(prev_status)
     return prev_status
 
 
@@ -161,6 +162,8 @@ async def check_new_messages():
             await match_messages(bebra)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
+        except ExitLoop as e:
+            logger.success(f"{bebra.username} is {e}")
 
             # print(dialog.name)
     logger.debug(show_client[client])
