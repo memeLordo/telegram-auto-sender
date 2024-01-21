@@ -37,7 +37,7 @@ async def sent_reply(bebra: User, message: str | Message) -> None:
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
         await client.send_message(bebra, message)
-        logger.debug(f"{show_client(client)}: message sent to {log_name}")
+        logger.debug(f"{show_client[client]}: message sent to {log_name}")
 
 
 async def match_sent_message(user: User, from_user: User, message: Message):
@@ -115,7 +115,7 @@ async def check_new_messages() -> None:
         except ExitLoop as e:
             logger.opt(colors=True).debug(f"<green>{e}</green>")
             # print(dialog.name)
-    logger.debug(show_client(client))
+    logger.debug(show_client[client])
 
 
 @logger.catch

@@ -14,7 +14,7 @@ logger.add(sys.stderr, level="DEBUG")
 
 @logger.catch
 async def start() -> None:
-    logger.warning(f"Counting in {show_client(client)}")
+    logger.warning(f"Counting in {show_client[client]}")
 
     await count_users()
     if client != clients[-1]:

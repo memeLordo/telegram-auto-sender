@@ -92,7 +92,7 @@ async def send_messages_in_list(range_list):
             bebra = await client.get_entity(username)
             await asyncio.sleep(5)
             await client.send_message(bebra, Lead.say_hi(name))
-            logger.debug(f"{show_client(client)}:message sent to {username}")
+            logger.debug(f"{show_client[client]}:message sent to {username}")
     except errors.rpcerrorlist.PeerFloodError as e:
         logger.critical(repr(e))
     finally:

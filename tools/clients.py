@@ -7,10 +7,4 @@ client3 = TelegramClient("tools3", config.api_id2, config.api_hash2)
 clients = [client1, client2, client3]
 
 
-def show_client(client: TelegramClient) -> str:
-    if client == client1:
-        return "client1"
-    elif client == client2:
-        return "client2"
-    else:
-        return "client3"
+show_client = {client1: "client1", client2: "client2", client3: "client3"}
