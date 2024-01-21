@@ -90,43 +90,38 @@ async def get_status_of(user: User):
 
 
 def update_status_by(message: str, prev_status: UserStatus):
-    status = None
     message_: set = make_text_to_set(message)
     logger.opt(colors=True).debug(f"<white>{message_}</white>")
-    first_cond = [Keywords.FIRST_MESSAGE, None]
-    form_cond = [Keywords.FORM, UserStatus.WAIT_FIRST_MESSAGE]
-    ignore = Keywords.IGNORE
-    print(prev_status == first_cond[1], prev_status == form_cond[1])
-    if not (message_ & ignore):
-        if (message_ & first_cond[0]) and (prev_status == first_cond[1]):
-            status = UserStatus.WAIT_FIRST_MESSAGE
-            print("success!")
-        elif (message_ & form_cond[0]) and (prev_status == form_cond[1]):
-            status = UserStatus.WAIT_FORM_REPLY
-            print("success!!")
-
-    # logger.opt(colors=True).debug(
-    #     f"<white>{prev_status} -> {status}</white>"
-    # )
-
-    return status
-
-    # await sent_reply_start(client, user)
+    if not (message_ & Keywords.IGNORE):
+        match prev_status:
+            case None:
+                if message_ & Keywords.FIRST_MESSAGE:
+                    return UserStatus.WAIT_FIRST_MESSAGE
+            case UserStatus.WAIT_FORM_REPLY:
+                if message_ & Keywords.FORM:
+                    return UserStatus.DONE
+            case UserStatus.DONE:
+    return prev_status
 
 
 async def reply_by(user: User, message: str, status: UserStatus | None):
-
-    match update_status_by(message, status):
+    new_status = update_status_by(message, status)
+    if status != new_status:
+        logger.opt(colors=True).debug(
+            f"{user.username}: <red>{status} -> {new_status}</red>"
+        )
+    match new_status:
         case UserStatus.WAIT_FIRST_MESSAGE:
             first_name = remove_punct(user.first_name.split(" ")[0])
             await sent_reply(user, Assistant.form(first_name))
             logger.debug(f"Form message sent to {user.username}")
             # set_status -> W
-        case UserStatus.WAIT_FORM_REPLY:
+        case UserStatus.DONE:
             await sent_reply(user, Assistant.FINISH)
             logger.debug(f"Finish message sent to {user.username}")
         case _:
-            pass
+            return
+    raise ExitLoop(new_status)
 
 
 async def match_messages(user: User) -> None:
@@ -136,8 +131,6 @@ async def match_messages(user: User) -> None:
         return
 
     current_status: UserStatus | None = await get_status_of(user)
-    logger.opt(colors=True).debug(
-        f"<green>{user.username} = {current_status}</green>")
     for message in user_messages:
         message_text: str = message.message
         if not message_text:
@@ -159,7 +152,7 @@ async def check_new_messages():
             bebra: User = dialog.entity
             if not is_user(bebra):
                 continue
-            logger.debug(bebra.username)
+            # logger.debug(bebra.username)
             # -> call func для внутр. проверки
             # -> call func для внеш. проверки
             # Проверяем статус по нашим полследним сообщениям из формы
