@@ -35,12 +35,13 @@ def remove_punct(text: Text) -> str:
         for char in ignose_list:
             text = text.replace(char, "")
         return text
-
+    _chars = ignore_chars(string.punctuation.join("«»"))
     result = remove_emoji(
         text.translate(
-            str.maketrans("", "", ignore_chars(string.punctuation.join("«»")))
+            str.maketrans(_chars, ' ' * len(_chars))
         )
     )
+
     return result
 
 
