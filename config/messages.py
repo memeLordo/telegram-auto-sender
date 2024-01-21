@@ -50,7 +50,7 @@ class Assistant:
 
     def form(name: str | None = None) -> str:
         def say_hi(name: str | None) -> str:
-            return "" if name is None or name == "" else f" {name}"
+            return "" if name in [None, "", " "] else f", {name}"
 
         return (
             f"Привет{say_hi(name)}, рад, что вы откликнулись на вакансию🔥\n\n"
