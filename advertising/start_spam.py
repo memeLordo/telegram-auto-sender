@@ -14,7 +14,14 @@ from .clients import choose_clients, clients
 # @logger.catch
 async def start() -> None:
     request = await client(functions.messages.GetDialogFiltersRequest())
+    # global delete_channel_set
+    # ban_channel_set = set()
     await send_to_channels(request)
+
+    # if len(delete_channel_set) <= 10:
+    #     for channel in delete_channel_set:
+    #         await client.delete_dialog(channel)
+    #         logger.info("channel deleted")
 
     if client != clients[-1]:
         logger.debug(f"Current count: {count}")
@@ -52,7 +59,7 @@ async def send_to_channels(req: Any, dirs: Set[str] = Keywords.SEARCHED_DIRS):
                     #     await asyncio.sleep(3)
                 logger.success("Sent!")
         except KeyError:
-            pass
+            continue
 
 
 @logger.catch
@@ -79,9 +86,8 @@ async def send_message_to_channel(result: dict, message: str) -> None:
             # logger.info(e)
         except errors.rpcerrorlist.UserBannedInChannelError:
             logger.error(f"Ban: {my_channel.title}")
-            await client.delete_dialog(my_channel)
-            # logger.info(repr(e))
-            logger.info("channel deleted")
+            # delete_channel_set.add(my_channel)
+
         except errors.rpcerrorlist.ChannelPrivateError:
             logger.warning(f"Private: {my_channel.title}")
             # logger.info(repr(e))
