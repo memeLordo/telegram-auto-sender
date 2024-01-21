@@ -31,7 +31,6 @@ logger.add(
 @logger.catch
 async def sent_reply(bebra: User, message: str | Message) -> None:
     log_name: str = bebra.first_name
-
     await asyncio.sleep(1)
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
@@ -40,64 +39,115 @@ async def sent_reply(bebra: User, message: str | Message) -> None:
         logger.debug(f"{show_client[client]}: message sent to {log_name}")
 
 
-async def match_sent_message(user: User, from_user: User, message: Message):
-    read_message: tuple[str] = tuple(make_plain(message.message).split(" "))
-    r_message = set(read_message)
-    username: str = user.username
-    if user != from_user:
-        form_set = set(make_plain(Assistant.form()).split(" "))
-        finish_set = set(make_plain(Assistant.FINISH).split(" "))
-        # TODO: change state
-        if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
-            raise ExitLoop(f"{username} = {UserStatus.WAIT_FORM_REPLY}")
-        if len(finish_set & r_message) / len(finish_set) >= Deviation.FINISH:
-            raise ExitLoop(f"{username} = {UserStatus.DONE}")
-        return
+# Пока не знаю, какой объект возвращать
+def filter_messages_by_date(messages: list) -> object | None:
+    if messages.total > 5:
+        return None
+    return filter(
+        lambda x: (today - x.date.date()).days <= Deviation.MESSAGE_AGE,
+        messages,
+    )
 
-    logger.opt(colors=True).debug(f"<white>{read_message}</white>:{username}")
 
-    get_first_message: str = Keywords.FIRST_MESSAGE
-    get_form: str = Keywords.FORM
-    ignore: str = Keywords.IGNORE
+async def prepare_messages(by_user: User, from_user: User) -> object | None:
+    return filter_messages_by_date(
+        await client.get_messages(
+            entity=by_user,
+            from_user=from_user,
+            limit=3,
+        )
+    )
 
-    if not (r_message & ignore):
-        if r_message & get_first_message:
+
+def make_text_to_set(some_text: str) -> set:
+    read_message: tuple[str] = tuple(make_plain(some_text).split(" "))
+    return set(read_message)
+
+
+def get_status_by(message: Message) -> UserStatus | None:
+    message_ = make_text_to_set(message.message)
+    form_ = make_text_to_set(Assistant.form())
+    finish_ = make_text_to_set(make_plain(Assistant.FINISH))
+    # TODO: change state
+    if len(form_ & message_) / len(form_) >= Deviation.FORM:
+        return UserStatus.WAIT_FORM_REPLY
+    if len(finish_ & message_) / len(finish_) >= Deviation.FINISH:
+        return UserStatus.DONE
+    return None
+
+
+# TODO: переписать в программу update_state.py
+async def get_status_of(user: User):
+    myself: User = await client.get_me()
+    my_messages: list[Message] | None = await prepare_messages(user, myself)
+
+    for message in my_messages or []:
+        current_status: UserStatus | None = get_status_by(message)
+        if current_status is None:
+            continue
+        return current_status
+    return None
+
+
+def update_status_by(message: str, prev_status: UserStatus):
+    status = None
+    message_: set = make_text_to_set(message)
+    logger.opt(colors=True).debug(f"<white>{message_}</white>")
+    first_cond = [Keywords.FIRST_MESSAGE, None]
+    form_cond = [Keywords.FORM, UserStatus.WAIT_FIRST_MESSAGE]
+    ignore = Keywords.IGNORE
+    print(prev_status == first_cond[1], prev_status == form_cond[1])
+    if not (message_ & ignore):
+        if (message_ & first_cond[0]) and (prev_status == first_cond[1]):
+            status = UserStatus.WAIT_FIRST_MESSAGE
+            print("success!")
+        elif (message_ & form_cond[0]) and (prev_status == form_cond[1]):
+            status = UserStatus.WAIT_FORM_REPLY
+            print("success!!")
+
+    # logger.opt(colors=True).debug(
+    #     f"<white>{prev_status} -> {status}</white>"
+    # )
+
+    return status
+
+    # await sent_reply_start(client, user)
+
+
+async def reply_by(user: User, message: str, status: UserStatus | None):
+
+    match update_status_by(message, status):
+        case UserStatus.WAIT_FIRST_MESSAGE:
             first_name = remove_punct(user.first_name.split(" ")[0])
             await sent_reply(user, Assistant.form(first_name))
-            raise ExitLoop(f"First message sent to {username}")
-            # TODO: send start_message to user
-        elif r_message & get_form:
+            logger.debug(f"Form message sent to {user.username}")
+            # set_status -> W
+        case UserStatus.WAIT_FORM_REPLY:
             await sent_reply(user, Assistant.FINISH)
-            raise ExitLoop(f"Reply message sent to {username}")
-        # await sent_reply_start(client, user)
+            logger.debug(f"Finish message sent to {user.username}")
+        case _:
+            pass
 
 
-async def match_messages_from(user: User, from_user: User) -> None:
-    user_messages_list = await client.get_messages(
-        entity=user,
-        limit=3,
-    )
-    if user_messages_list.total > 5:
+async def match_messages(user: User) -> None:
+    user_messages: list[Message] | None = await prepare_messages(user, user)
+
+    if user_messages is None:
         return
-    user_messages = filter(
-        lambda x: (today - x.date.date()).days <= Deviation.MESSAGE_AGE,
-        user_messages_list,
-    )
 
+    current_status: UserStatus | None = await get_status_of(user)
+    logger.opt(colors=True).debug(
+        f"<green>{user.username} = {current_status}</green>")
     for message in user_messages:
-        if not message.message:
+        message_text: str = message.message
+        if not message_text:
             continue
-        try:
-            await match_sent_message(user, from_user, message)
-        except ExitLoop as e:
-            logger.opt(colors=True).debug(f"<green>{e}</green>")
+        await reply_by(user, message_text, current_status)
 
 
 @logger.catch
-async def check_new_messages() -> None:
+async def check_new_messages():
     await client.start()
-    global myself
-    myself = await client.get_me()
     dialogs = await client.get_dialogs(ignore_pinned=True)
     filtered_dialogs = filter(
         lambda x: x.date is None
@@ -106,17 +156,16 @@ async def check_new_messages() -> None:
     )
     for dialog in filtered_dialogs:
         try:
-            bebra = dialog.entity
+            bebra: User = dialog.entity
             if not is_user(bebra):
                 continue
-            # logger.debug(bebra.username)
-            # -> await {Подготовить фйлы}(func)
+            logger.debug(bebra.username)
             # -> call func для внутр. проверки
             # -> call func для внеш. проверки
             # Проверяем статус по нашим полследним сообщениям из формы
-            await match_messages_from(bebra, myself)
-            # Далее определяем тип по последним сообщениям пользователя
-            await match_messages_from(bebra, bebra)
+            # Сначала назначим статус на основе наших сообщений в local_var,
+            # а после будем делать запрос статуса уже внутри функции
+            await match_messages(bebra)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
 
