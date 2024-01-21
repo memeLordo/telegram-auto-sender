@@ -44,9 +44,6 @@ async def match_sent_message(user: User, from_user: User, message: Message):
     read_message: tuple[str] = tuple(make_plain(message.message).split(" "))
     r_message = set(read_message)
     username: str = user.username
-    upprove: str = Keywords.FIRST_MESSAGE
-    ignore: str = Keywords.IGNORE
-
     if user != from_user:
         form_set = set(make_plain(Assistant.form()).split(" "))
         finish_set = set(make_plain(Assistant.FINISH).split(" "))
@@ -59,21 +56,25 @@ async def match_sent_message(user: User, from_user: User, message: Message):
 
     logger.opt(colors=True).debug(f"<white>{read_message}</white>:{username}")
 
-    if r_message & upprove and not (r_message & ignore):
-        current_state = None
-        match current_state:
-            case None:
-                first_name = remove_punct(user.first_name.split(" ")[0])
-                await sent_reply(user, Assistant.form(first_name))
-                raise ExitLoop(f"First message sent to {username}")
-                # TODO: send start_message to user
+    get_first_message: str = Keywords.FIRST_MESSAGE
+    get_form: str = Keywords.FORM
+    ignore: str = Keywords.IGNORE
+
+    if not (r_message & ignore):
+        if r_message & get_first_message:
+            first_name = remove_punct(user.first_name.split(" ")[0])
+            await sent_reply(user, Assistant.form(first_name))
+            raise ExitLoop(f"First message sent to {username}")
+            # TODO: send start_message to user
+        elif r_message & get_form:
+            await sent_reply(user, Assistant.FINISH)
+            raise ExitLoop(f"Reply message sent to {username}")
         # await sent_reply_start(client, user)
 
 
 async def match_messages_from(user: User, from_user: User) -> None:
     user_messages_list = await client.get_messages(
         entity=user,
-        from_user=from_user,
         limit=3,
     )
     if user_messages_list.total > 5:
