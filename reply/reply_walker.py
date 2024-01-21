@@ -87,7 +87,10 @@ async def match_messages_from(user: User, from_user: User) -> None:
     for message in user_messages:
         if not message.message:
             continue
-        await match_sent_message(user, from_user, message)
+        try:
+            await match_sent_message(user, from_user, message)
+        except ExitLoop as e:
+            logger.opt(colors=True).debug(f"<green>{e}</green>")
 
 
 @logger.catch
@@ -107,14 +110,16 @@ async def check_new_messages() -> None:
             if not is_user(bebra):
                 continue
             # logger.debug(bebra.username)
+            # -> await {Подготовить фйлы}(func)
+            # -> call func для внутр. проверки
+            # -> call func для внеш. проверки
             # Проверяем статус по нашим полследним сообщениям из формы
             await match_messages_from(bebra, myself)
             # Далее определяем тип по последним сообщениям пользователя
             await match_messages_from(bebra, bebra)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
-        except ExitLoop as e:
-            logger.opt(colors=True).debug(f"<green>{e}</green>")
+
             # print(dialog.name)
     logger.debug(show_client[client])
 
