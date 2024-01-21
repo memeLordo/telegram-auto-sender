@@ -47,3 +47,8 @@ def remove_punct(text: Text) -> str:
 
 def make_plain(text: str) -> str:
     return remove_punct(" ".join(str(text).lower().splitlines()))
+
+
+def make_text_to_set(some_text: str) -> set:
+    read_message: tuple[str] = tuple(make_plain(some_text).split(" "))
+    return set(read_message)

@@ -6,7 +6,7 @@ from config.messages import Assistant, Deviation, Keywords
 from loguru import logger
 from telethon.types import Message, User
 from tools.checker import is_user
-from tools.editor import make_plain, remove_punct
+from tools.editor import make_text_to_set, remove_punct
 
 from .clients import choose_clients, show_client
 from .tags import UserStatus
@@ -59,15 +59,10 @@ async def prepare_messages(by_user: User, from_user: User) -> object | None:
     )
 
 
-def make_text_to_set(some_text: str) -> set:
-    read_message: tuple[str] = tuple(make_plain(some_text).split(" "))
-    return set(read_message)
-
-
 def get_status_by(message: Message) -> UserStatus | None:
     message_ = make_text_to_set(message.message)
     form_ = make_text_to_set(Assistant.form())
-    finish_ = make_text_to_set(make_plain(Assistant.FINISH))
+    finish_ = make_text_to_set(Assistant.FINISH)
     # TODO: change state
     if len(form_ & message_) / len(form_) >= Deviation.FORM:
         return UserStatus.WAIT_FORM_REPLY
