@@ -70,10 +70,11 @@ if __name__ == "__main__":
         logger.trace(count)
 
         for current_client in clients:
+            global client
             with current_client as client:
                 client.session.save_entities = False
                 client.loop.run_until_complete(start())
         for key, value in count.items():
-            print(f"{key}\t{value}")
+            print(f"{key} {value}")
     except KeyboardInterrupt:
         pass
