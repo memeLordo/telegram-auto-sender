@@ -17,28 +17,12 @@ async def start() -> None:
     # global delete_channel_set
     # ban_channel_set = set()
     await send_to_channels(request)
-
-    # if len(delete_channel_set) <= 10:
-    #     for channel in delete_channel_set:
-    #         await client.delete_dialog(channel)
-    #         logger.info("channel deleted")
-
     if client != clients[-1]:
         logger.debug(f"Current count: {count}")
         logger.success("Start waiting")
         await asyncio.sleep(10 * 60)
 
-    # async for dialog in client.iter_dialogs():
-    #     logger.info(dialog.id)
-    #     logger.info(client.get_entity(GetFullChannel(dialog.id)))
-    # if dialog.id in ad_channels_1:
-    #     logger.info('success')
-    # if dialog.name == 'Golubin | Assistant':
-    #     logger.info(dialog.id)
-    # await send_to_channels(SEARCHED_DIRS)
 
-
-# @logger.catch
 async def send_to_channels(req: Any, dirs: Set[str] = Keywords.SEARCHED_DIRS):
     for dialog_filter in req:
         result = dialog_filter.to_dict()
