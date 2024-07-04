@@ -41,7 +41,7 @@ async def sent_reply(bebra: User, message: str | Message) -> None:
 
 # Пока не знаю, какой объект возвращать
 def filter_messages_by_date(messages: list) -> object | None:
-    if messages.total > 5:
+    if messages.total > 10:
         return None
     return filter(
         lambda x: (today - x.date.date()).days <= Deviation.MESSAGE_AGE,
@@ -84,9 +84,9 @@ async def get_status_of(user: User):
     return None
 
 
-def update_status_by(message: str, prev_status: UserStatus):
+def update_status_by(username: str, message: str, prev_status: UserStatus):
     message_: set = make_text_to_set(message)
-    logger.opt(colors=True).debug(f"<white>{message_}</white>")
+    logger.opt(colors=True).debug(f"{username} - <white>{message_}</white>")
     if not (message_ & Keywords.IGNORE):
         match prev_status:
             case None:
@@ -101,7 +101,7 @@ def update_status_by(message: str, prev_status: UserStatus):
 
 
 async def reply_by(user: User, message: str, status: UserStatus | None):
-    new_status = update_status_by(message, status)
+    new_status = update_status_by(user.username, message, status)
     if status != new_status:
         logger.opt(colors=True).debug(
             f"{user.username}: <red>{status} -> {new_status}</red>"
@@ -110,11 +110,11 @@ async def reply_by(user: User, message: str, status: UserStatus | None):
         case UserStatus.WAIT_FIRST_MESSAGE:
             first_name = remove_punct(user.first_name.split(" ")[0])
             await sent_reply(user, Assistant.form(first_name))
-            logger.debug(f"Form message sent to {user.username}")
+            # logger.debug(f"Form message sent to {user.username}")
             # set_status -> W
         case UserStatus.DONE:
             await sent_reply(user, Assistant.FINISH)
-            logger.debug(f"Finish message sent to {user.username}")
+            # logger.debug(f"Finish message sent to {user.username}")
         case _:
             return
     raise ExitLoop(new_status)

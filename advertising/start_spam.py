@@ -34,10 +34,8 @@ async def send_to_channels(req: Any, dirs: Set[str] = Keywords.SEARCHED_DIRS):
                 match title:
                     case "Free assist":
                         await send_message_to_channel(result, Ads.FREE_ASSIST)
-                        await asyncio.sleep(3)
                     case "Новые FA":
                         await send_message_to_channel(result, Ads.NEW_FA)
-                        await asyncio.sleep(3)
                     # case 'КазаньSMS':
                     #     await send_message_to_channel(result, ad_kazan)
                     #     await asyncio.sleep(3)
@@ -61,6 +59,7 @@ async def send_message_to_channel(result: dict, message: str) -> None:
             global count
             count += 1
             logger.debug(my_channel.title)
+            await asyncio.sleep(3)
         except KeyError:
             continue
         except errors.rpcerrorlist.SlowModeWaitError:
@@ -71,19 +70,18 @@ async def send_message_to_channel(result: dict, message: str) -> None:
         except errors.rpcerrorlist.UserBannedInChannelError:
             logger.error(f"Ban: {my_channel.title}")
             # delete_channel_set.add(my_channel)
-
         except errors.rpcerrorlist.ChannelPrivateError:
             logger.warning(f"Private: {my_channel.title}")
             # logger.info(repr(e))
         except ValueError:
             logger.error(f"Value error: {channels_id}")
-            await client.get_dialogs()
-            try:
-                my_channel: Any = await client.get_entity(channels_id)
-                logger.info("Channel's ID found")
-                await client.send_message(my_channel, message)
-            except ValueError:
-                continue
+            # await client.get_dialogs()
+            # try:
+            #     my_channel: Any = await client.get_entity(channels_id)
+            #     logger.info("Channel's ID found")
+            #     await client.send_message(my_channel, message)
+            # except ValueError:
+            #     continue
 
 
 @logger.catch

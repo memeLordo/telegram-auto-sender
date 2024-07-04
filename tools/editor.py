@@ -31,7 +31,7 @@ def remove_emoji(text: Text) -> str:
 
 
 def remove_punct(text: Text) -> str:
-    def ignore_chars(text: Text, ignose_list: List[str] = ["+", "@"]) -> str:
+    def ignore_chars(text: Text, ignose_list: List[str] = ["+", "@", "-"]) -> str:
         for char in ignose_list:
             text = text.replace(char, "")
         return text
