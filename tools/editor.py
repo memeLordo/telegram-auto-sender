@@ -31,18 +31,24 @@ def remove_emoji(text: Text) -> str:
 
 
 def remove_punct(text: Text) -> str:
-    def ignore_chars(text: Text, ignose_list: List[str] = ["+", "@"]) -> str:
-        for char in ignose_list:
+    def ignore_chr(text: Text, ignose_lst: List[str] = ["+", "@", "-"]) -> str:
+        for char in ignose_lst:
             text = text.replace(char, "")
         return text
-
+    _chars = ignore_chr(string.punctuation.join("«»"))
     result = remove_emoji(
         text.translate(
-            str.maketrans("", "", ignore_chars(string.punctuation.join("«»")))
+            str.maketrans(_chars, ' ' * len(_chars))
         )
     )
+
     return result
 
 
 def make_plain(text: str) -> str:
     return remove_punct(" ".join(str(text).lower().splitlines()))
+
+
+def make_text_to_set(some_text: str) -> set:
+    read_message: tuple[str] = tuple(make_plain(some_text).split(" "))
+    return set(read_message)

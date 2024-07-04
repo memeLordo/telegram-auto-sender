@@ -19,10 +19,4 @@ def choose_clients(client_list: List[TelegramClient] = clients) -> list:
     return list(client_list[int(x) - 1] for x in key_clients)
 
 
-def show_client(client: TelegramClient) -> str:
-    if client == client1:
-        return "client1"
-    elif client == client2:
-        return "client2"
-    else:
-        return "client3"
+show_client = {client1: "client1", client2: "client2", client3: "client3"}

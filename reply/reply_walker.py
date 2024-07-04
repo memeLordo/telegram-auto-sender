@@ -6,7 +6,7 @@ from config.messages import Assistant, Deviation, Keywords
 from loguru import logger
 from telethon.types import Message, User
 from tools.checker import is_user
-from tools.editor import make_plain, remove_punct
+from tools.editor import make_text_to_set, remove_punct
 
 from .clients import choose_clients, show_client
 from .tags import UserStatus
@@ -31,69 +31,112 @@ logger.add(
 @logger.catch
 async def sent_reply(bebra: User, message: str | Message) -> None:
     log_name: str = bebra.first_name
-
     await asyncio.sleep(1)
     await client.send_read_acknowledge(bebra)
     async with client.action(bebra, "typing"):
         await asyncio.sleep(4)
         await client.send_message(bebra, message)
-        logger.debug(f"{show_client(client)}: message sent to {log_name}")
+        logger.debug(f"{show_client[client]}: message sent to {log_name}")
 
 
-async def match_sent_message(user: User, from_user: User, message: Message):
-    read_message: tuple[str] = tuple(make_plain(message.message).split(" "))
-    r_message = set(read_message)
-    username: str = user.username
-    upprove: str = Keywords.FIRST_MESSAGE
-    ignore: str = Keywords.IGNORE
-
-    if user != from_user:
-        form_set = set(make_plain(Assistant.form()).split(" "))
-        finish_set = set(make_plain(Assistant.FINISH).split(" "))
-        # TODO: change state
-        if len(form_set & r_message) / len(form_set) >= Deviation.FORM:
-            raise ExitLoop(f"{username} = {UserStatus.WAIT_FORM_REPLY}")
-        if len(finish_set & r_message) / len(finish_set) >= Deviation.FINISH:
-            raise ExitLoop(f"{username} = {UserStatus.DONE}")
-        return
-
-    logger.opt(colors=True).debug(f"<white>{read_message}</white>:{username}")
-
-    if r_message & upprove and not (r_message & ignore):
-        current_state = None
-        match current_state:
-            case None:
-                first_name = remove_punct(user.first_name.split(" ")[0])
-                await sent_reply(user, Assistant.form(first_name))
-                raise ExitLoop(f"First message sent to {username}")
-                # TODO: send start_message to user
-        # await sent_reply_start(client, user)
-
-
-async def match_messages_from(user: User, from_user: User) -> None:
-    user_messages_list = await client.get_messages(
-        entity=user,
-        from_user=from_user,
-        limit=3,
-    )
-    if user_messages_list.total > 5:
-        return
-    user_messages = filter(
+# Пока не знаю, какой объект возвращать
+def filter_messages_by_date(messages: list) -> object | None:
+    if messages.total > 10:
+        return None
+    return filter(
         lambda x: (today - x.date.date()).days <= Deviation.MESSAGE_AGE,
-        user_messages_list,
+        messages,
     )
 
-    for message in user_messages:
-        if not message.message:
+
+async def prepare_messages(by_user: User, from_user: User) -> object | None:
+    return filter_messages_by_date(
+        await client.get_messages(
+            entity=by_user,
+            from_user=from_user,
+            limit=3,
+        )
+    )
+
+
+def get_status_by(message: Message) -> UserStatus | None:
+    message_ = make_text_to_set(message.message)
+    form_ = make_text_to_set(Assistant.form())
+    finish_ = make_text_to_set(Assistant.FINISH)
+    # TODO: change state
+    if len(form_ & message_) / len(form_) >= Deviation.FORM:
+        return UserStatus.WAIT_FORM_REPLY
+    if len(finish_ & message_) / len(finish_) >= Deviation.FINISH:
+        return UserStatus.DONE
+    return None
+
+
+# TODO: переписать в программу update_state.py
+async def get_status_of(user: User):
+    myself: User = await client.get_me()
+    my_messages: list[Message] | None = await prepare_messages(user, myself)
+
+    for message in my_messages or []:
+        current_status: UserStatus | None = get_status_by(message)
+        if current_status is None:
             continue
-        await match_sent_message(user, from_user, message)
+        return current_status
+    return None
+
+
+def update_status_by(username: str, message: str, prev_status: UserStatus):
+    message_: set = make_text_to_set(message)
+    logger.opt(colors=True).debug(f"{username} - <white>{message_}</white>")
+    if not (message_ & Keywords.IGNORE):
+        match prev_status:
+            case None:
+                if message_ & Keywords.FIRST_MESSAGE:
+                    return UserStatus.WAIT_FIRST_MESSAGE
+            case UserStatus.WAIT_FORM_REPLY:
+                if message_ & Keywords.FORM:
+                    return UserStatus.DONE
+            case UserStatus.DONE:
+                raise ExitLoop(prev_status)
+    return prev_status
+
+
+async def reply_by(user: User, message: str, status: UserStatus | None):
+    new_status = update_status_by(user.username, message, status)
+    if status != new_status:
+        logger.opt(colors=True).debug(
+            f"{user.username}: <red>{status} -> {new_status}</red>"
+        )
+    match new_status:
+        case UserStatus.WAIT_FIRST_MESSAGE:
+            first_name = remove_punct(user.first_name.split(" ")[0])
+            await sent_reply(user, Assistant.form(first_name))
+            # logger.debug(f"Form message sent to {user.username}")
+            # set_status -> W
+        case UserStatus.DONE:
+            await sent_reply(user, Assistant.FINISH)
+            # logger.debug(f"Finish message sent to {user.username}")
+        case _:
+            return
+    raise ExitLoop(new_status)
+
+
+async def match_messages(user: User) -> None:
+    user_messages: list[Message] | None = await prepare_messages(user, user)
+
+    if user_messages is None:
+        return
+
+    current_status: UserStatus | None = await get_status_of(user)
+    for message in user_messages:
+        message_text: str = message.message
+        if not message_text:
+            continue
+        await reply_by(user, message_text, current_status)
 
 
 @logger.catch
-async def check_new_messages() -> None:
+async def check_new_messages():
     await client.start()
-    global myself
-    myself = await client.get_me()
     dialogs = await client.get_dialogs(ignore_pinned=True)
     filtered_dialogs = filter(
         lambda x: x.date is None
@@ -102,20 +145,23 @@ async def check_new_messages() -> None:
     )
     for dialog in filtered_dialogs:
         try:
-            bebra = dialog.entity
+            bebra: User = dialog.entity
             if not is_user(bebra):
                 continue
             # logger.debug(bebra.username)
+            # -> call func для внутр. проверки
+            # -> call func для внеш. проверки
             # Проверяем статус по нашим полследним сообщениям из формы
-            await match_messages_from(bebra, myself)
-            # Далее определяем тип по последним сообщениям пользователя
-            await match_messages_from(bebra, bebra)
+            # Сначала назначим статус на основе наших сообщений в local_var,
+            # а после будем делать запрос статуса уже внутри функции
+            await match_messages(bebra)
         except ValueError as e:
             logger.critical(e.__class__.__name__)
         except ExitLoop as e:
-            logger.success(repr(e))
+            logger.success(f"{bebra.username} is {e}")
+
             # print(dialog.name)
-    logger.debug(show_client(client))
+    logger.debug(show_client[client])
 
 
 @logger.catch

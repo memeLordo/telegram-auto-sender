@@ -2,6 +2,6 @@
 *.log
 *.txt
 *.json
-test.py
+.env*
 __pycache__
-new_year
+test.py
